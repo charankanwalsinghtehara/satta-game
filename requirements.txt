@@ -7,3 +7,4 @@ inflection==0.5.1
 uritemplate==4.2.0
 dj-database-url
 psycopg[binary]
+whitenoise.middleware.WhiteNoiseMiddleware
