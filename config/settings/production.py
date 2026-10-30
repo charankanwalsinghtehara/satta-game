@@ -1,20 +1,13 @@
 
 import os
 
-import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
-
 from .base import *
 
-# Production mode
 DEBUG = False
 
-# Security
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
-    raise ImproperlyConfigured(
-        "DJANGO_SECRET_KEY must be set in the environment."
-    )
+    raise RuntimeError("DJANGO_SECRET_KEY must be set.")
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -25,41 +18,33 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
-# Database: Render PostgreSQL
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise ImproperlyConfigured(
-        "DATABASE_URL must be set in the environment."
-    )
-
+# Simple SQLite database instead of PostgreSQL.
+# Data is temporary unless stored on a persistent disk.
 DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=600,
-        ssl_require=True,
-    )
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.environ.get(
+            "DJANGO_SQLITE_PATH",
+            "/tmp/satta-bazar.sqlite3",
+        ),
+        "OPTIONS": {
+            "timeout": 20,
+        },
+    }
 }
 
 # Static files
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise: serve collected static files
-if "whitenoise" in os.environ.get("INSTALLED_APPS", ""):
-    pass
-
-MIDDLEWARE = list(MIDDLEWARE)
-
-if (
-    "whitenoise.middleware.WhiteNoiseMiddleware"
-    not in MIDDLEWARE
-):
+# WhiteNoise serves collected static files.
+if "whitenoise.middleware.WhiteNoiseMiddleware" not in MIDDLEWARE:
     MIDDLEWARE.insert(
         1,
         "whitenoise.middleware.WhiteNoiseMiddleware",
     )
 
-# CORS: allow the deployed React frontend
+# Frontend and backend are separate Render services.
 CORS_ALLOWED_ORIGINS = [
     origin.strip().rstrip("/")
     for origin in os.environ.get(
@@ -69,7 +54,8 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-# CSRF: trust the deployed frontend
+CORS_ALLOW_CREDENTIALS = True
+
 CSRF_TRUSTED_ORIGINS = [
     origin.strip().rstrip("/")
     for origin in os.environ.get(
@@ -79,8 +65,12 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
-# Render HTTPS proxy support
+# HTTPS on Render
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# Required for session and CSRF cookies across separate HTTPS origins.
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
