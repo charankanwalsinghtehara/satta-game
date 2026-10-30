@@ -16,6 +16,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Markets from "./pages/Markets";
 import Leaderboard from "./pages/Leaderboard";
+import NuksaanNawab from "./components/NuksaanNawab";
 
 import {
   ApiError,
@@ -45,9 +46,21 @@ const assetStyles = {
 };
 
 const navigation = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "markets", label: "Markets", icon: TrendingUp },
-  { id: "leaderboard", label: "Leaderboard", icon: Trophy },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    id: "markets",
+    label: "Markets",
+    icon: TrendingUp,
+  },
+  {
+    id: "leaderboard",
+    label: "Leaderboard",
+    icon: Trophy,
+  },
 ];
 
 export default function App() {
@@ -107,10 +120,13 @@ export default function App() {
         .slice()
         .reverse()
         .map((snapshot) => ({
-          time: new Date(snapshot.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time: new Date(snapshot.created_at).toLocaleTimeString(
+            [],
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          ),
           value: Number(snapshot.price),
         }));
     }
@@ -147,7 +163,9 @@ export default function App() {
       })
       .catch((error) => {
         if (active) {
-          setNotice(`Could not load market data: ${error.message}`);
+          setNotice(
+            `Could not load market data: ${error.message}`,
+          );
         }
       });
 
@@ -179,7 +197,9 @@ export default function App() {
         }
 
         if (active) {
-          setNotice(`Could not load account: ${error.message}`);
+          setNotice(
+            `Could not load account: ${error.message}`,
+          );
         }
       });
 
@@ -191,14 +211,17 @@ export default function App() {
   async function handleTrade(asset, side) {
     if (!user) {
       setAuthMode("login");
-      setNotice("Log in to trade with your virtual wallet.");
+      setNotice(
+        "Log in to trade with your virtual wallet.",
+      );
       return;
     }
 
     let result;
 
     try {
-      const tradeAction = side === "buy" ? buyAsset : sellAsset;
+      const tradeAction =
+        side === "buy" ? buyAsset : sellAsset;
 
       result = await tradeAction({
         symbol: asset.symbol,
@@ -211,11 +234,11 @@ export default function App() {
       return;
     }
 
-    // Update the virtual wallet balance after successful trade.
+    // Update the virtual wallet only after trade success.
     setBalance(Number(result.portfolio.cash_balance));
 
-    // Show the centered popup only after Django confirms success.
-    // It stays open until the user clicks the close button.
+    // The popup handles its own sound in didOpen.
+    // No sound plays directly from the Buy/Sell handler.
     showTradePopup(
       side,
       result.roast ||
@@ -224,7 +247,7 @@ export default function App() {
           : `💸 Sold ${asset.name} successfully!`),
     );
 
-    // Refresh market data without hiding the trade popup.
+    // Refresh market data without hiding the popup.
     try {
       await refreshMarket();
     } catch (error) {
@@ -259,10 +282,12 @@ export default function App() {
 
       setUser(profile);
 
-      const wallet = response.wallet || (await getWallet());
+      const wallet =
+        response.wallet || (await getWallet());
 
       setBalance(Number(wallet.balance));
       setAuthMode("");
+
       setAuthForm({
         username: "",
         email: "",
@@ -302,7 +327,9 @@ export default function App() {
       )}
 
       <aside
-        className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}
+        className={`sidebar ${
+          mobileOpen ? "sidebar-open" : ""
+        }`}
       >
         <div className="brand">
           <div className="brand-mark">
@@ -329,7 +356,9 @@ export default function App() {
           {navigation.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              className={`nav-item ${page === id ? "active" : ""}`}
+              className={`nav-item ${
+                page === id ? "active" : ""
+              }`}
               onClick={() => navigate(id)}
             >
               <Icon size={19} />
@@ -342,7 +371,9 @@ export default function App() {
 
         <button
           className="nav-item"
-          onClick={() => setNotice("YOLO mode is coming soon.")}
+          onClick={() =>
+            setNotice("YOLO mode is coming soon.")
+          }
         >
           <Zap size={19} />
           <span>YOLO Mode</span>
@@ -352,7 +383,9 @@ export default function App() {
         <button
           className="nav-item"
           onClick={() =>
-            setNotice("Trade history is available through the Django API.")
+            setNotice(
+              "Trade history is available through the Django API.",
+            )
           }
         >
           <ArrowLeftRight size={19} />
@@ -368,6 +401,7 @@ export default function App() {
           </div>
 
           <p>Zero real money. Maximum bakchodi.</p>
+
           <span className="version-label">
             SATTA BAZAR · DEMO V1
           </span>
@@ -424,7 +458,10 @@ export default function App() {
             >
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">YOUR VIRTUAL ACCOUNT</p>
+                  <p className="eyebrow">
+                    YOUR VIRTUAL ACCOUNT
+                  </p>
+
                   <h2>
                     {authMode === "register"
                       ? "Create account"
@@ -519,7 +556,9 @@ export default function App() {
                   className="auth-switch"
                   onClick={() => {
                     setAuthMode(
-                      authMode === "register" ? "login" : "register",
+                      authMode === "register"
+                        ? "login"
+                        : "register",
                     );
                     setAuthError("");
                   }}
@@ -541,7 +580,8 @@ export default function App() {
               marketPaused={marketPaused}
               rank={
                 rankings.findIndex(
-                  (entry) => entry.username === user?.username,
+                  (entry) =>
+                    entry.username === user?.username,
                 ) + 1
               }
               onTrade={handleTrade}
@@ -549,7 +589,10 @@ export default function App() {
           )}
 
           {page === "markets" && (
-            <Markets assets={assets} onTrade={handleTrade} />
+            <Markets
+              assets={assets}
+              onTrade={handleTrade}
+            />
           )}
 
           {page === "leaderboard" && (
@@ -557,6 +600,9 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Floating Hinglish meme chatbot */}
+      <NuksaanNawab />
     </div>
   );
 }

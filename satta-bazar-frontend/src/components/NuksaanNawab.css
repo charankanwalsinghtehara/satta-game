@@ -1,0 +1,213 @@
+
+.nawab-chat {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
+  font-family: inherit;
+}
+
+.nawab-launcher {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 18px;
+  border: 1px solid #f0abfc;
+  border-radius: 999px;
+  background: #d8b4fe;
+  color: #251238;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 8px 30px #0005;
+  transition: transform 0.2s ease;
+}
+
+.nawab-launcher:hover {
+  transform: translateY(-2px);
+}
+
+.nawab-window {
+  display: flex;
+  flex-direction: column;
+  width: min(365px, calc(100vw - 24px));
+  height: min(520px, calc(100dvh - 100px));
+  margin-bottom: 12px;
+  overflow: hidden;
+  color: #f8f5ff;
+  background: #171421;
+  border: 1px solid #49345e;
+  border-radius: 18px;
+  box-shadow: 0 20px 65px #0008;
+}
+
+.nawab-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px;
+  background: #251b32;
+  border-bottom: 1px solid #49345e;
+}
+
+.nawab-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #d8b4fe20;
+  font-size: 23px;
+}
+
+.nawab-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.nawab-heading strong,
+.nawab-heading span {
+  display: block;
+}
+
+.nawab-heading strong {
+  font-size: 14px;
+}
+
+.nawab-heading span {
+  margin-top: 4px;
+  color: #e9b8ff;
+  font-size: 10px;
+}
+
+.nawab-header button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 7px;
+  color: #f8f5ff;
+  background: transparent;
+  cursor: pointer;
+  font-size: 17px;
+}
+
+.nawab-header button:hover {
+  background: #ffffff15;
+}
+
+.nawab-disclaimer {
+  padding: 8px;
+  color: #e9b8ff;
+  background: #d8b4fe0d;
+  font-size: 10px;
+  text-align: center;
+}
+
+.nawab-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px;
+  overflow-y: auto;
+}
+
+.nawab-message {
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.nawab-message.bot {
+  align-self: flex-start;
+  color: #eee6f7;
+  background: #30253d;
+  border-bottom-left-radius: 4px;
+}
+
+.nawab-message.user {
+  align-self: flex-end;
+  color: #251238;
+  background: #d8b4fe;
+  border-bottom-right-radius: 4px;
+}
+
+.nawab-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 11px 10px;
+}
+
+.nawab-suggestions button {
+  padding: 7px 9px;
+  color: #e9c8ff;
+  background: #d8b4fe12;
+  border: 1px solid #d8b4fe40;
+  border-radius: 999px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.nawab-suggestions button:hover {
+  background: #d8b4fe25;
+}
+
+.nawab-form {
+  display: flex;
+  gap: 8px;
+  padding: 11px;
+  background: #251b32;
+  border-top: 1px solid #49345e;
+}
+
+.nawab-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px;
+  color: #f8f5ff;
+  background: #110e18;
+  border: 1px solid #49345e;
+  border-radius: 9px;
+  outline: none;
+  font-size: 12px;
+}
+
+.nawab-form input:focus {
+  border-color: #d8b4fe;
+}
+
+.nawab-form button {
+  width: 42px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 9px;
+  color: #251238;
+  background: #d8b4fe;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.nawab-form button:hover {
+  background: #e9d5ff;
+}
+
+@media (max-width: 480px) {
+  .nawab-chat {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .nawab-window {
+    width: calc(100vw - 24px);
+    height: min(500px, calc(100dvh - 90px));
+  }
+}
