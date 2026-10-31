@@ -104,8 +104,6 @@ function getCookieToken(name) {
 }
 
 async function getCsrfToken() {
-  // The backend must return csrfToken in its JSON response
-  // when frontend and backend are on separate domains.
   const data = await request("/auth/csrf/");
 
   const token =
@@ -176,6 +174,15 @@ export function buyAsset(trade) {
 
 export function sellAsset(trade) {
   return csrfRequest("/trades/sell/", trade);
+}
+
+// Portfolio and profit/loss
+export function getPortfolio() {
+  return request("/portfolio/");
+}
+
+export function getPortfolioPositions() {
+  return request("/portfolio/positions/");
 }
 
 // Asset history
