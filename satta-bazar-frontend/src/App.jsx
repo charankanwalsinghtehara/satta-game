@@ -91,24 +91,16 @@ export default function App() {
       getLeaderboard(),
     ]);
 
-    const moverList = Array.isArray(movers?.movers)
-      ? movers.movers
-      : [];
-
-    const overviewAssets = Array.isArray(overview?.assets)
-      ? overview.assets
-      : [];
-
     const changes = new Map(
-      moverList.map((mover) => [
+      movers.movers.map((mover) => [
         mover.symbol,
-        Number(mover.change_percent) || 0,
-      ])
+        Number(mover.change_percent),
+      ]),
     );
 
-    const formattedAssets = overviewAssets.map((asset) => ({
+    const assets = overview.assets.map((asset) => ({
       ...asset,
-      price: Number(asset.current_price) || 0,
+      price: Number(asset.current_price),
       change: changes.get(asset.symbol) || 0,
       joke: asset.description,
       ...(assetStyles[asset.category] || assetStyles.life),
@@ -116,46 +108,34 @@ export default function App() {
 
     let historyData = [];
 
-    if (formattedAssets.length) {
+    if (assets.length) {
       const chartAsset =
-        formattedAssets.find(
-          (asset) => asset.symbol === moverList[0]?.symbol
-        ) || formattedAssets[0];
+        assets.find(
+          (asset) => asset.symbol === movers.movers[0]?.symbol,
+        ) || assets[0];
 
-      try {
-        const history = await getAssetHistory(chartAsset.symbol);
+      const history = await getAssetHistory(chartAsset.symbol);
 
-        historyData = (Array.isArray(history?.results)
-          ? history.results
-          : []
-        )
-          .slice()
-          .reverse()
-          .map((snapshot) => ({
-            time: new Date(snapshot.created_at).toLocaleTimeString(
-              [],
-              {
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            ),
-            value: Number(snapshot.price) || 0,
-          }));
-      } catch (error) {
-        // Chart history failing should not hide the market.
-        console.warn("Could not load chart history:", error);
-      }
+      historyData = history.results
+        .slice()
+        .reverse()
+        .map((snapshot) => ({
+          time: new Date(snapshot.created_at).toLocaleTimeString(
+            [],
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          ),
+          value: Number(snapshot.price),
+        }));
     }
 
     return {
-      assets: formattedAssets,
-      events: Array.isArray(overview?.active_events)
-        ? overview.active_events
-        : [],
-      marketPaused: Boolean(overview?.paused),
-      rankings: Array.isArray(leaderboard?.rankings)
-        ? leaderboard.rankings
-        : [],
+      assets,
+      events: overview.active_events,
+      marketPaused: overview.paused,
+      rankings: leaderboard.rankings,
       marketData: historyData,
     };
   }
@@ -169,8 +149,7 @@ export default function App() {
   }
 
   async function refreshMarket() {
-    const data = await loadMarket();
-    applyMarketData(data);
+    applyMarketData(await loadMarket());
   }
 
   useEffect(() => {
@@ -185,7 +164,7 @@ export default function App() {
       .catch((error) => {
         if (active) {
           setNotice(
-            `Could not load market data: ${error.message}`
+            `Could not load market data: ${error.message}`,
           );
         }
       });
@@ -199,10 +178,12 @@ export default function App() {
         const wallet = await getWallet();
 
         if (active) {
-          setBalance(Number(wallet.balance) || 0);
+          setBalance(Number(wallet.balance));
         }
       })
       .catch((error) => {
+        if (!active && error instanceof ApiError) return;
+
         if (
           error instanceof ApiError &&
           [401, 403].includes(error.status)
@@ -217,7 +198,7 @@ export default function App() {
 
         if (active) {
           setNotice(
-            `Could not load account: ${error.message}`
+            `Could not load account: ${error.message}`,
           );
         }
       });
@@ -230,7 +211,10 @@ export default function App() {
   async function handleTrade(asset, side) {
     if (!user) {
       setAuthMode("login");
-      setNotice("Log in to trade with your virtual wallet.");
+      setAuthError("");
+      setNotice(
+        "Log in to trade with your virtual wallet.",
+      );
       return;
     }
 
@@ -251,36 +235,27 @@ export default function App() {
       return;
     }
 
-    // Trade succeeded: update wallet immediately.
-    const portfolio = result?.portfolio;
-
-    if (portfolio && portfolio.cash_balance !== undefined) {
-      setBalance(Number(portfolio.cash_balance) || 0);
-
-      // Send the actual backend response to the P&L component.
-      // This updates the dashboard without waiting for polling.
-      window.dispatchEvent(
-        new CustomEvent("portfolio:updated", {
-          detail: portfolio,
-        })
-      );
+    // Update the wallet only after the backend confirms success.
+    if (result?.portfolio?.cash_balance != null) {
+      setBalance(Number(result.portfolio.cash_balance));
     } else {
-      // The trade succeeded but the expected portfolio data
-      // was missing; request a fresh wallet balance.
+      // Fallback if the trade response doesn't include portfolio data.
       getWallet()
         .then((wallet) => {
-          setBalance(Number(wallet.balance) || 0);
+          setBalance(Number(wallet.balance));
         })
         .catch((error) => {
-          console.error("Wallet refresh failed:", error);
+          setNotice(
+            `Trade completed, but wallet refresh failed: ${error.message}`,
+          );
         });
-
-      window.dispatchEvent(new Event("portfolio:refresh"));
     }
 
-    // Realized P&L applies to sells; buys are not realized profit.
+    // Tell the P&L component to refresh immediately after a trade.
+    window.dispatchEvent(new Event("portfolio:refresh"));
+
     const realizedPnl = Number(
-      result?.trade?.realized_pnl ?? 0
+      result?.trade?.realized_pnl ?? 0,
     );
 
     const tradeOutcome =
@@ -292,19 +267,21 @@ export default function App() {
             ? "loss"
             : "neutral";
 
-    // Show the meme popup immediately after trade success.
+    // Keep the existing trade popup and its sound behavior unchanged.
     showTradePopup(
       side,
-      result?.roast ||
+      result.roast ||
         (side === "buy"
           ? `🚀 Bought ${asset.name} successfully!`
           : `💸 Sold ${asset.name} successfully!`),
-      tradeOutcome
+      tradeOutcome,
     );
 
-    // Refresh market in the background; do not block the popup.
+    // Refresh market data in the background; don't delay the popup.
     refreshMarket().catch((error) => {
-      console.warn("Market refresh failed:", error);
+      setNotice(
+        `Trade completed, but market refresh failed: ${error.message}`,
+      );
     });
   }
 
@@ -336,7 +313,7 @@ export default function App() {
       const wallet =
         response.wallet || (await getWallet());
 
-      setBalance(Number(wallet.balance) || 0);
+      setBalance(Number(wallet.balance));
       setAuthMode("");
 
       setAuthForm({
@@ -346,11 +323,8 @@ export default function App() {
       });
 
       setNotice(
-        `Welcome, ${profile.username}! Your virtual wallet is ready.`
+        `Welcome, ${profile.username}! Your virtual wallet is ready.`,
       );
-
-      // Let any mounted portfolio component fetch the new account.
-      window.dispatchEvent(new Event("portfolio:refresh"));
     } catch (error) {
       setAuthError(error.message);
     } finally {
@@ -365,8 +339,6 @@ export default function App() {
       setUser(null);
       setBalance(0);
       setNotice("You have been logged out.");
-
-      window.dispatchEvent(new Event("portfolio:refresh"));
     } catch (error) {
       setNotice(`Could not log out: ${error.message}`);
     }
@@ -427,7 +399,9 @@ export default function App() {
 
         <button
           className="nav-item"
-          onClick={() => setNotice("YOLO mode is coming soon.")}
+          onClick={() =>
+            setNotice("YOLO mode is coming soon.")
+          }
         >
           <Zap size={19} />
           <span>YOLO Mode</span>
@@ -438,7 +412,7 @@ export default function App() {
           className="nav-item"
           onClick={() =>
             setNotice(
-              "Trade history is available through the Django API."
+              "Trade history is available through the Django API.",
             )
           }
         >
@@ -612,7 +586,7 @@ export default function App() {
                     setAuthMode(
                       authMode === "register"
                         ? "login"
-                        : "register"
+                        : "register",
                     );
                     setAuthError("");
                   }}
@@ -635,7 +609,7 @@ export default function App() {
               rank={
                 rankings.findIndex(
                   (entry) =>
-                    entry.username === user?.username
+                    entry.username === user?.username,
                 ) + 1
               }
               onTrade={handleTrade}
