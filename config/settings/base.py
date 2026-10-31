@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "apps.game",
 ]
 
+# Each middleware must appear only once.
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -36,6 +37,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+ROOT_URLCONF = "config.urls"
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 TEMPLATES = [
     {
@@ -51,10 +56,6 @@ TEMPLATES = [
         },
     },
 ]
-
-ROOT_URLCONF = "config.urls"
-WSGI_APPLICATION = "config.wsgi.application"
-ASGI_APPLICATION = "config.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -115,12 +116,13 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 STARTING_BALANCE = os.getenv("STARTING_BALANCE", "10000.00")
+
 EMAIL_BACKEND = os.getenv(
     "DJANGO_EMAIL_BACKEND",
     "django.core.mail.backends.console.EmailBackend",
 )
 
-# Session lifetime: 14 days, refreshed when requests are made.
+# Session authentication: retain the session for 14 days.
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
@@ -148,3 +150,5 @@ REST_FRAMEWORK = {
         "rest_framework.schemas.openapi.AutoSchema"
     ),
 }
+
+
