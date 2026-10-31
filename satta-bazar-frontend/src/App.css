@@ -1394,3 +1394,121 @@
     text-align: left;
   }
 }
+
+/* Dedicated, responsive login/register card */
+form.auth-panel {
+  position: fixed;
+  z-index: 1000;
+  top: 50%;
+  left: calc(50% + 124px);
+  transform: translate(-50%, -50%);
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  margin: 0;
+  padding: clamp(22px, 4vw, 34px);
+  background: #191a2b;
+  border: 1px solid #a78bfa55;
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 100vmax rgba(5, 5, 12, 0.82),
+    0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+form.auth-panel .panel-heading {
+  align-items: flex-start;
+  margin-bottom: 26px;
+}
+
+form.auth-panel .eyebrow {
+  line-height: 1.6;
+}
+
+form.auth-panel h2 {
+  margin-top: 8px;
+  font-size: clamp(25px, 4vw, 32px);
+  letter-spacing: -0.8px;
+}
+
+form.auth-panel .auth-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 17px;
+  margin: 0 0 20px;
+}
+
+form.auth-panel .auth-fields label {
+  gap: 8px;
+  color: #dedcf0;
+  font-size: 12px;
+}
+
+form.auth-panel .auth-fields input {
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 12px 14px;
+  outline: none;
+  border: 1px solid #383950;
+  border-radius: 11px;
+  background: #10111b;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+form.auth-panel .auth-fields input:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px #a78bfa22;
+}
+
+form.auth-panel .auth-error {
+  padding: 11px 13px;
+  border: 1px solid #fb718544;
+  border-radius: 10px;
+  background: #fb718512;
+  color: #fda4af;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+form.auth-panel .auth-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+}
+
+form.auth-panel .auth-actions .button {
+  width: 100%;
+  min-height: 46px;
+  justify-content: center;
+  border-radius: 11px;
+  font-weight: 800;
+}
+
+form.auth-panel .auth-actions .button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+form.auth-panel .auth-switch {
+  justify-self: center;
+  padding: 7px;
+  color: #c4b5fd;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+form.auth-panel .auth-switch:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  form.auth-panel {
+    left: 50%;
+    width: min(440px, calc(100vw - 28px));
+    padding: 23px;
+  }
+}
