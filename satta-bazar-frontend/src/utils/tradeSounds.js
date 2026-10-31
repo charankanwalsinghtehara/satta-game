@@ -1,141 +1,177 @@
 
-const SOUND_API = "https://sfxmint.com/api/v1/search";
+let audioContext = null;
+let enabled = true;
+let lastPlayedAt = 0;
+let currentAudio = null;
 
-const SOUND_SEARCHES = {
-  buy: [
-    "cash register cha ching",
-    "cartoon success sound",
-    "positive game sound",
-  ],
-  profit: [
-    "cash register cha ching",
-    "happy victory sound",
-    "cartoon celebration",
-  ],
-  loss: [
-    "sad trombone",
-    "cartoon fail sound",
-    "game over funny sound",
-  ],
-  neutral: [
-    "cartoon pop sound",
-    "funny boing",
-    "soft game notification",
-  ],
+// Remote meme sounds; local synthesized sounds are the fallback.
+const MEME_SOUNDS = {
+  profit: "https://www.myinstants.com/media/sounds/vine-boom.mp3",
+  loss: "https://www.myinstants.com/media/sounds/sad-trombone.mp3",
+  buy: "https://www.myinstants.com/media/sounds/pop.mp3",
+  sell: "https://www.myinstants.com/media/sounds/bruh.mp3",
 };
 
-const soundCache = new Map();
-const lastSoundByCategory = new Map();
-
-let audioPlayer = null;
-let soundEnabled = true;
-
-function randomItem(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
-export function setTradeSoundsEnabled(enabled) {
-  soundEnabled = Boolean(enabled);
-
-  if (!soundEnabled && audioPlayer) {
-    audioPlayer.pause();
-    audioPlayer.currentTime = 0;
-  }
+export function setTradeSoundsEnabled(value) {
+  enabled = Boolean(value);
 }
 
 export function areTradeSoundsEnabled() {
-  return soundEnabled;
+  return enabled;
 }
 
-async function fetchSounds(query) {
-  if (soundCache.has(query)) {
-    return soundCache.get(query);
+function getContext() {
+  if (typeof window === "undefined") return null;
+
+  const AudioContextClass =
+    window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextClass) return null;
+
+  if (!audioContext) {
+    audioContext = new AudioContextClass();
   }
 
-  const response = await fetch(
-    `${SOUND_API}?q=${encodeURIComponent(query)}&limit=10`,
+  if (audioContext.state === "suspended") {
+    void audioContext.resume();
+  }
+
+  return audioContext;
+}
+
+function tone(ctx, frequency, start, duration, options = {}) {
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  oscillator.type = options.type || "sine";
+  oscillator.frequency.setValueAtTime(frequency, start);
+
+  if (options.endFrequency) {
+    oscillator.frequency.exponentialRampToValueAtTime(
+      Math.max(1, options.endFrequency),
+      start + duration
+    );
+  }
+
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(
+    options.volume || 0.18,
+    start + 0.015
+  );
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    start + duration
   );
 
-  if (!response.ok) {
-    throw new Error(`Sound search failed (${response.status}).`);
-  }
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
 
-  const data = await response.json();
-  const sounds = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.results)
-      ? data.results
-      : [];
-
-  soundCache.set(query, sounds);
-  return sounds;
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.025);
 }
 
-async function findSound(category) {
-  const searches = SOUND_SEARCHES[category] || SOUND_SEARCHES.neutral;
+function playFallback(type, outcome) {
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
 
-  for (const query of searches) {
-    try {
-      const sounds = await fetchSounds(query);
-      const previousSlug = lastSoundByCategory.get(category);
+    const t = ctx.currentTime + 0.02;
 
-      const playable = sounds.filter((sound) => {
-        if (!sound?.mp3_url) return false;
-
-        try {
-          const url = new URL(sound.mp3_url);
-          return url.protocol === "https:" || url.protocol === "http:";
-        } catch {
-          return false;
-        }
+    if (outcome === "profit") {
+      // Cha-ching style
+      tone(ctx, 1300, t, 0.14, {
+        type: "square",
+        endFrequency: 900,
+        volume: 0.12,
       });
 
-      if (!playable.length) continue;
+      tone(ctx, 1760, t + 0.1, 0.32, {
+        endFrequency: 1100,
+        volume: 0.18,
+      });
+    } else if (outcome === "loss") {
+      // Sad trombone style
+      [392, 370, 349, 262].forEach((frequency, index) => {
+        tone(ctx, frequency, t + index * 0.2, 0.24, {
+          type: "triangle",
+          endFrequency: frequency * 0.92,
+          volume: 0.17,
+        });
+      });
+    } else if (type === "buy") {
+      // Happy purchase pop
+      tone(ctx, 500, t, 0.12, {
+        endFrequency: 180,
+        volume: 0.18,
+      });
 
-      const alternatives = playable.filter(
-        (sound) => sound.slug !== previousSlug,
-      );
+      tone(ctx, 740, t + 0.04, 0.1, {
+        type: "triangle",
+        endFrequency: 420,
+        volume: 0.1,
+      });
+    } else {
+      // Funny low-pitched bruh-style sound
+      tone(ctx, 210, t, 0.18, {
+        type: "square",
+        endFrequency: 155,
+        volume: 0.16,
+      });
 
-      const chosen = randomItem(alternatives.length ? alternatives : playable);
-
-      lastSoundByCategory.set(category, chosen.slug || chosen.mp3_url);
-      return chosen;
-    } catch (error) {
-      // A failed sound provider should never break a successful trade.
-      console.warn(`Could not load "${query}" sound:`, error);
+      tone(ctx, 155, t + 0.18, 0.25, {
+        type: "triangle",
+        endFrequency: 105,
+        volume: 0.18,
+      });
     }
+  } catch (error) {
+    console.warn("Fallback sound unavailable:", error);
   }
-
-  return null;
 }
 
 export async function playTradeSound(type = "buy", outcome = "neutral") {
-  if (!soundEnabled) return;
+  if (!enabled) return;
 
-  const category =
-    outcome === "profit" || outcome === "loss"
-      ? outcome
-      : type === "buy"
-        ? "buy"
-        : "neutral";
+  // Avoid duplicate sounds from repeated UI events.
+  const now = Date.now();
+
+  if (now - lastPlayedAt < 600) return;
+
+  lastPlayedAt = now;
+
+  const soundKey =
+    outcome === "profit"
+      ? "profit"
+      : outcome === "loss"
+        ? "loss"
+        : type === "buy"
+          ? "buy"
+          : "sell";
+
+  const soundUrl = MEME_SOUNDS[soundKey];
 
   try {
-    const sound = await findSound(category);
-
-    if (!sound?.mp3_url || !soundEnabled) return;
-
-    if (audioPlayer) {
-      audioPlayer.pause();
-      audioPlayer.currentTime = 0;
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
     }
 
-    audioPlayer = new Audio(sound.mp3_url);
-    audioPlayer.volume = 0.55;
-    audioPlayer.preload = "none";
+    const audio = new Audio(soundUrl);
+    currentAudio = audio;
+    audio.volume = 0.65;
+    audio.preload = "auto";
 
-    await audioPlayer.play();
+    audio.onerror = () => {
+      if (currentAudio === audio) {
+        currentAudio = null;
+        playFallback(type, outcome);
+      }
+    };
+
+    await audio.play();
   } catch (error) {
-    // Browser autoplay rules or a third-party sound outage are non-fatal.
-    console.warn("Trade sound could not play:", error);
+    // Remote audio can fail due to network, browser policy, or URL changes.
+    currentAudio = null;
+    playFallback(type, outcome);
   }
 }
