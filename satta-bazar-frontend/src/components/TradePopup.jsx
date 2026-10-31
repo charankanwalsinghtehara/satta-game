@@ -2,8 +2,6 @@
 import Swal from "sweetalert2";
 import { playTradeSound } from "../utils/tradeSounds";
 
-const MEME_API = "https://meme-api.com/gimme";
-
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => {
     const entities = {
@@ -18,101 +16,88 @@ function escapeHtml(value = "") {
   });
 }
 
-async function fetchMeme() {
-  const response = await fetch(MEME_API);
+const reactions = {
+  buy: {
+    heading: "ENTRY LE LI, NAWAB! 🚀",
+    emoji: "🫡📈",
+    label: "ENTRY WALA CONFIDENCE",
+    caption:
+      "Buy button dab gaya. Ab portfolio ko grow karne de—har 3 second chart ko ghoorne se price sharma ke nahi badhega. 😂",
+    source: "Buy reaction",
+    color: "#4ade80",
+  },
+  profit: {
+    heading: "PROFIT KI KHUSHBOO! 🤑",
+    emoji: "🤑💸",
+    label: "GREEN ZONE DRAMA",
+    caption:
+      "Profit dikha toh Nawab ne khud ko market ka damaad samajh liya. Screenshot le, par risk management ko block mat kar. 👑",
+    source: "Profit reaction",
+    color: "#4ade80",
+  },
+  loss: {
+    heading: "PORTFOLIO KO CHOT LAGI 💀",
+    emoji: "🤡📉",
+    label: "EMOTIONAL DAMAGE",
+    caption:
+      "Market ne phir reality check de diya. Revenge trade karke loss ka sequel mat bana—pehle saans le, phir numbers dekh. 😭",
+    source: "Loss reaction",
+    color: "#fb7185",
+  },
+  sell: {
+    heading: "EXIT KAR DIYA! 💸",
+    emoji: "🚪🫡",
+    label: "EXIT WALA SCENE",
+    caption:
+      "Position se exit ho gaya, Nawab. P&L confirm kiye bina victory lap ya maatam shuru mat kar. 😂",
+    source: "Sell reaction",
+    color: "#fbbf24",
+  },
+  neutral: {
+    heading: "TRADE CONFIRMED! 🎮",
+    emoji: "🎮🫡",
+    label: "MARKET KA REALITY CHECK",
+    caption:
+      "Trade execute ho gaya. Profit ya loss ka verdict numbers denge—Nawab ka overconfidence department nahi. 🤡",
+    source: "Trade reaction",
+    color: "#a78bfa",
+  },
+};
 
-  if (!response.ok) {
-    throw new Error("Could not load a meme.");
-  }
+function classifyOutcome(type, message = "") {
+  const text = String(message).toLowerCase();
 
-  const data = await response.json();
+  const lossPattern =
+    /\b(loss|losing|lost|nuksaan|nuksan|ghata|negative|red|down)\b|loss mein|ghate mein/;
 
-  if (!data.url || !/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(data.url)) {
-    throw new Error("No suitable meme found.");
-  }
+  const profitPattern =
+    /\b(profit|profitable|gain|gained|earned|kamaya|munafa|positive|green)\b|profit mein|faayde mein/;
 
-  return {
-    url: data.url,
-    title: data.title || "Market ka haal 😂",
-    subreddit: data.subreddit || "memes",
-  };
+  // Avoid treating a generic trade roast as proof of actual P&L.
+  if (lossPattern.test(text)) return "loss";
+  if (profitPattern.test(text)) return "profit";
+
+  return type === "buy" ? "buy" : "neutral";
 }
 
-async function loadAndRenderMeme() {
-  const memeContainer = document.getElementById("satta-meme-container");
-  const titleContainer = document.getElementById("satta-meme-title");
-  const sourceContainer = document.getElementById("satta-meme-source");
-  const nextButton = document.getElementById("satta-next-meme");
-
-  if (!memeContainer) return;
-
-  memeContainer.innerHTML =
-    '<p style="color:#a1a1aa;padding:20px;">Meme loading... 😂</p>';
-
-  if (nextButton) {
-    nextButton.disabled = true;
-    nextButton.textContent = "Loading...";
-  }
-
-  try {
-    const meme = await fetchMeme();
-
-    // The popup might have closed while the request was in progress.
-    if (!document.getElementById("satta-meme-container")) return;
-
-    memeContainer.innerHTML = `
-      <img
-        src="${escapeHtml(meme.url)}"
-        alt="${escapeHtml(meme.title)}"
-        style="
-          display:block;
-          max-width:100%;
-          max-height:280px;
-          object-fit:contain;
-          margin:0 auto;
-          border-radius:12px;
-        "
-      />
-    `;
-
-    if (titleContainer) {
-      titleContainer.textContent = meme.title;
-    }
-
-    if (sourceContainer) {
-      sourceContainer.textContent = `r/${meme.subreddit}`;
-    }
-  } catch {
-    if (memeContainer.isConnected) {
-      memeContainer.innerHTML = `
-        <div style="padding:24px;text-align:center;color:#fbbf24;">
-          <div style="font-size:42px;">🤡📉</div>
-          <p>Meme server bhi loss mein hai!</p>
-          <p style="font-size:13px;color:#a1a1aa;">
-            Try loading another meme.
-          </p>
-        </div>
-      `;
-    }
-  } finally {
-    if (nextButton?.isConnected) {
-      nextButton.disabled = false;
-      nextButton.textContent = "Next Meme 😂";
-    }
-  }
+function getReaction(type, message) {
+  const outcome = classifyOutcome(type, message);
+  return { outcome, reaction: reactions[outcome] };
 }
 
-export function showTradePopup(type, message) {
-  const isBuy = type === "buy";
+export function showTradePopup(type, message = "") {
+  const normalizedType = type === "sell" ? "sell" : "buy";
+  const { outcome, reaction } = getReaction(normalizedType, message);
 
-  const heading = isBuy
-    ? "BUY KAR DIYA! 🚀"
-    : "SELL KAR DIYA! 💸";
-
-  const accentColor = isBuy ? "#4ade80" : "#fb7185";
+  const safeMessage = escapeHtml(
+    message ||
+      (normalizedType === "buy"
+        ? "Virtual buy successful. Entry ho gayi!"
+        : "Virtual sell successful. Exit ho gaya!"),
+  );
 
   Swal.fire({
-    title: heading,
+    title: reaction.heading,
     html: `
       <div style="text-align:center;">
         <p style="
@@ -120,70 +105,41 @@ export function showTradePopup(type, message) {
           font-size:15px;
           line-height:1.6;
           margin:0 0 18px;
-        ">
-          ${escapeHtml(message)}
-        </p>
+        ">${safeMessage}</p>
 
         <div style="
-          border:1px solid #27272a;
+          border:1px solid #3f3f46;
           background:#09090b;
           border-radius:14px;
-          padding:14px;
+          padding:20px 16px;
           margin-top:12px;
         ">
           <div style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:10px;
+            color:${reaction.color};
+            font-size:11px;
+            font-weight:800;
+            letter-spacing:1.5px;
             margin-bottom:12px;
-          ">
-            <strong style="color:#fafafa;font-size:14px;">
-              Market ka reality check 🤡
-            </strong>
+          ">${reaction.label}</div>
 
-            <span id="satta-meme-source" style="
-              color:#a1a1aa;
-              font-size:11px;
-            ">
-              Loading...
-            </span>
-          </div>
+          <div
+            role="img"
+            aria-label="${escapeHtml(reaction.label)}"
+            style="font-size:64px;line-height:1.3;margin:8px 0 14px;"
+          >${reaction.emoji}</div>
 
-          <div id="satta-meme-container" style="
-            min-height:100px;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            overflow:hidden;
-          ">
-            <p style="color:#a1a1aa;">Meme loading... 😂</p>
-          </div>
+          <p style="
+            color:#e4e4e7;
+            font-size:14px;
+            line-height:1.7;
+            margin:0;
+          ">${escapeHtml(reaction.caption)}</p>
 
-          <p id="satta-meme-title" style="
-            color:#d4d4d8;
-            font-size:12px;
-            line-height:1.5;
-            margin:12px 0 0;
-          "></p>
-
-          <button
-            id="satta-next-meme"
-            type="button"
-            style="
-              width:100%;
-              margin-top:14px;
-              padding:10px 14px;
-              border:1px solid #3f3f46;
-              border-radius:9px;
-              background:#18181b;
-              color:#fafafa;
-              font-weight:600;
-              cursor:pointer;
-            "
-          >
-            Next Meme 😂
-          </button>
+          <div style="
+            color:#71717a;
+            font-size:11px;
+            margin-top:14px;
+          ">${escapeHtml(reaction.source)} · Satta Meme Club</div>
         </div>
 
         <p style="
@@ -191,39 +147,25 @@ export function showTradePopup(type, message) {
           font-size:11px;
           margin:14px 0 0;
         ">
-          Virtual money only. Asli zindagi mein soch samajh ke! 😭
+          Virtual money only. P&L ke liye portfolio numbers check karo. 😭
         </p>
       </div>
     `,
-
     background: "#18181b",
     color: "#fafafa",
     confirmButtonText: "Samajh Gaya 😂",
-    confirmButtonColor: accentColor,
+    confirmButtonColor: reaction.color,
     customClass: {
       popup: "satta-trade-popup",
       confirmButton: "satta-trade-confirm",
     },
-
     buttonsStyling: true,
     showCloseButton: true,
     allowOutsideClick: true,
     width: 480,
-
     didOpen: () => {
-      // Sound plays only after the trade popup has opened.
-      // Do not call playTradeSound from the Buy/Sell button handler.
-      void playTradeSound(type);
-
-      const nextButton = document.getElementById("satta-next-meme");
-
-      if (nextButton) {
-        nextButton.onclick = () => {
-          void loadAndRenderMeme();
-        };
-      }
-
-      void loadAndRenderMeme();
+      // One context-matched sound per successful trade popup.
+      void playTradeSound(normalizedType, outcome);
     },
   });
 }
