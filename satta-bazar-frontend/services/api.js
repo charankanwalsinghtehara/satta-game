@@ -32,7 +32,7 @@ function getErrorMessage(data, fallback) {
     return Object.values(data)
       .flat()
       .map((item) =>
-        typeof item === "string" ? item : JSON.stringify(item)
+        typeof item === "string" ? item : JSON.stringify(item),
       )
       .join(" ");
   }
@@ -50,7 +50,7 @@ async function parseResponse(response) {
 
 async function request(
   path,
-  { method = "GET", body, headers: extraHeaders = {} } = {}
+  { method = "GET", body, headers: extraHeaders = {} } = {},
 ) {
   const headers = {
     Accept: "application/json",
@@ -73,7 +73,7 @@ async function request(
   } catch {
     throw new ApiError(
       "Cannot connect to the server. Check your API URL and backend status.",
-      0
+      0,
     );
   }
 
@@ -82,7 +82,7 @@ async function request(
   if (!response.ok) {
     throw new ApiError(
       getErrorMessage(data, `Request failed (${response.status}).`),
-      response.status
+      response.status,
     );
   }
 
@@ -96,9 +96,7 @@ function getCookieToken(name) {
     .split("; ")
     .find((item) => item.startsWith(prefix));
 
-  if (!cookie) {
-    return null;
-  }
+  if (!cookie) return null;
 
   return decodeURIComponent(cookie.slice(prefix.length));
 }
@@ -114,7 +112,7 @@ async function getCsrfToken() {
   if (!token) {
     throw new ApiError(
       "CSRF token missing. Check the backend CSRF endpoint.",
-      403
+      403,
     );
   }
 
@@ -163,20 +161,11 @@ export function logout() {
   return csrfRequest("/auth/logout/");
 }
 
-// Wallet and trading
+// Wallet and portfolio
 export function getWallet() {
   return request("/wallet/");
 }
 
-export function buyAsset(trade) {
-  return csrfRequest("/trades/buy/", trade);
-}
-
-export function sellAsset(trade) {
-  return csrfRequest("/trades/sell/", trade);
-}
-
-// Portfolio and profit/loss
 export function getPortfolio() {
   return request("/portfolio/");
 }
@@ -185,9 +174,26 @@ export function getPortfolioPositions() {
   return request("/portfolio/positions/");
 }
 
+export function getPortfolioHistory() {
+  return request("/portfolio/history/");
+}
+
+// Trading
+export function buyAsset(trade) {
+  return csrfRequest("/trades/buy/", trade);
+}
+
+export function sellAsset(trade) {
+  return csrfRequest("/trades/sell/", trade);
+}
+
+export function getTrades() {
+  return request("/trades/");
+}
+
 // Asset history
 export function getAssetHistory(symbol) {
   return request(
-    `/assets/${encodeURIComponent(symbol)}/history/`
+    `/assets/${encodeURIComponent(symbol)}/history/`,
   );
 }
