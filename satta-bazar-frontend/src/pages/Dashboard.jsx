@@ -25,7 +25,7 @@ export default function Dashboard({
       !best || Math.abs(asset.change) > Math.abs(best.change)
         ? asset
         : best,
-    null
+    null,
   );
 
   return (
@@ -44,7 +44,11 @@ export default function Dashboard({
         </div>
 
         <div className="session-chip">
-          <span className={marketPaused ? "market-dot paused" : "live-dot"} />
+          <span
+            className={
+              marketPaused ? "market-dot paused" : "live-dot"
+            }
+          />
           {marketPaused ? "MARKET PAUSED" : "MARKET LIVE"}
         </div>
       </section>
@@ -143,7 +147,8 @@ export default function Dashboard({
           )}
 
           <div className="chart-legend">
-            <span /> Virtual market index
+            <span />
+            Virtual market index
           </div>
         </article>
 
@@ -169,10 +174,12 @@ export default function Dashboard({
             {events.slice(0, 3).map((event) => (
               <div className="activity-row" key={event.id}>
                 <span className="activity-emoji">📣</span>
+
                 <div className="activity-copy">
                   <strong>{event.name}</strong>
                   <p>{event.commentary}</p>
                 </div>
+
                 <span className="activity-up">•</span>
               </div>
             ))}
@@ -192,7 +199,10 @@ export default function Dashboard({
             <p className="eyebrow">LIVE FROM THE DJANGO API</p>
             <h2>Trending assets</h2>
           </div>
-          <span className="muted small">Virtual coins only</span>
+
+          <span className="muted small">
+            Virtual coins only
+          </span>
         </div>
 
         <div className="assets-grid">
@@ -207,7 +217,9 @@ export default function Dashboard({
           {!assets.length && (
             <div className="empty-state">
               <h3>No market assets are available.</h3>
-              <p>Check that the backend catalog has been seeded.</p>
+              <p>
+                Check that the backend catalog has been seeded.
+              </p>
             </div>
           )}
         </div>
