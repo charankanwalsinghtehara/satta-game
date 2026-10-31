@@ -1,129 +1,344 @@
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./NuksaanNawab.css";
 
-const categories = [
-  {
-    keys: ["hello", "hi", "hey", "namaste", "kaise ho"],
-    replies: [
-      "Oye investor! 😂 Aaj market se paisa banana hai ya market ko entertainment dena hai?",
-      "Nawabi salaam, mere sher! 🐂 Portfolio sambhal ke, ego side mein rakh ke.",
-    ],
-  },
-  {
-    keys: ["buy", "kharid", "purchase", "entry"],
-    replies: [
-      "Buy button dabane se pehle research bhi kar le, bhai. Mouse click koi investment strategy nahi! 💀",
-      "Entry toh le lega, exit ka plan hai ya seedha documentary banegi? 😂",
-      "FOMO mein mat ghus. Fundamentals, risk aur apna budget check kar pehle.",
-    ],
-  },
-  {
-    keys: ["sell", "bech", "exit"],
-    replies: [
-      "Sell karne se pehle apna plan check kar. Har red candle emergency nahi hoti, Nawab! 📉",
-      "Profit book karna art hai. Loss mein panic karna free entertainment hai — par mehenga padta hai. 😂",
-    ],
-  },
-  {
-    keys: ["loss", "nuksaan", "nuksan", "crash", "red", "gir raha"],
-    replies: [
-      "Portfolio laal hai? Bhai, Holi October mein kyun khel raha hai? 💀 Risk check kar, revenge trading mat kar.",
-      "Market ne aaj tera confidence short kar diya. 😂 Thoda break le aur apna trading plan review kar.",
-      "Phone mat tod, sher! Pehle dekh position kitni badi hai aur kitna risk liya tha.",
-    ],
-  },
-  {
-    keys: ["profit", "green", "kamaya", "rich", "crorepati"],
-    replies: [
-      "Oho! Profit aaya aur tu seedha private jet ke sapne dekhne laga. 😂 Pehle risk management ko bhi reward de.",
-      "Green portfolio, royal attitude! 👑 Bas ek achhe din ko lifetime guarantee mat samajh.",
-      "Profit mubarak, Nawab! Ab overconfidence mein saara wapas mat kar dena.",
-    ],
-  },
-  {
-    keys: ["portfolio", "holding", "holdings", "investment"],
-    replies: [
-      "Portfolio ka health check kar: diversification, position size aur risk. Sirf favourite stocks ka fan club mat bana! 😂",
-      "Bhai, saare paise ek stock mein daale hain? Portfolio hai ya ek hi episode ka thriller? 💀",
-    ],
-  },
-  {
-    keys: ["tip", "sure shot", "guarantee", "target"],
-    replies: [
-      "Guaranteed profit? Haan bhai, guaranteed hai ki future koi guarantee nahi kar sakta. 😂",
-      "Main Nuksaan Nawab hoon, Baba Predictanand nahi. Research kar aur risk samajh!",
-    ],
-  },
-  {
-    keys: ["market", "stock", "share", "nifty", "sensex", "bull", "bear"],
-    replies: [
-      "Market roller coaster hai, bhai. Seat belt ka naam risk management hai. 🎢",
-      "Bull bhi aayega, bear bhi. Tu bas bina plan ke bandar mat ban! 🐒",
-      "Chart dekh, fundamentals samajh, aur WhatsApp University se thoda break le.",
-    ],
-  },
-  {
-    keys: ["roast", "joke", "funny", "meme", "bakchodi"],
-    replies: [
-      "Teri strategy itni secret hai ki tujhe khud nahi pata tu kya kar raha hai. 💀",
-      "Confidence: 100%. Research: 'Bhai ne bola tha.' 😂📉",
-      "Tu buy button aise dabata hai jaise sale aaj hi khatam hone wali ho!",
-    ],
-  },
-  {
-    keys: ["help", "advice", "kya karu", "what should", "suggest"],
-    replies: [
-      "Pehle goal, time horizon aur risk limit bata. Guesswork se bach, mere Nawab!",
-      "Main meme-level advice aur basic checklists de sakta hoon. Guaranteed returns nahi, bhai!",
-    ],
-  },
-];
+const replyBank = {
+  greeting: [
+    "Adaab, Nawab sahab! 👑 Market ka comedian hazir hai. Crystal ball abhi bhi buffering pe hai. 😂",
+    "Oye sher! 🤡 Portfolio ka haal bata, ya seedha apni strategy ki post-mortem karwayein?",
+    "Salaam, investor sahab! Aaj market ne izzat di ya phir public mein roast kiya? 💀",
+  ],
 
-const fallback = [
-  "Bhai, meri bakchodi predefined hai! 😂 Try kar: buy, sell, loss, profit, market ya roast.",
-  "Samajh nahi aaya, Nawab sahab. Stock market ke baare mein pooch ya 'roast me' bol. 🤡",
-  "Mera crystal ball abhi service mein hai. 🔮 Lekin market jokes ready hain!",
-];
+  buy: [
+    "Entry le li? Wah Nawab, button dabane ki speed Olympic level ki hai. Ab risk limit aur exit plan bhi dikha do. 😂",
+    "Buy ho gaya, boss! Ab har red candle ko personal dushman samajh ke refresh mat karte rehna. 📉",
+    "Entry ke time confidence full HD, planning 144p? 😂 Position size aur risk pe bhi thoda pyaar barsa.",
+    "Nawab ne market mein entry maar di! 🚀 Bas FOMO ko apna portfolio manager mat banana.",
+  ],
+
+  sell: [
+    "Exit ka button mil gaya, mubarak ho! 😂 Ab P&L check kar—exit hua hai, trophy automatically nahi mili.",
+    "Bech diya? Theek hai, Nawab. Har exit victory nahi aur har exit failure bhi nahi. Numbers ko bolne de.",
+    "Position se bahar aa gaye, sahab! 🚪 Ab 'ek candle aur ruk jaata' wali film ka sequel mat banana. 💀",
+  ],
+
+  loss: [
+    "Aah, portfolio laal hai. 🍅 Market ne tujhe investor se ketchup bana diya! Revenge trading mat kar—pehle break, phir risk review.",
+    "Nuksaan hua aur dimaag bol raha hai 'double karke recover karunga'? Bhai, yeh trading hai, casino ka boss level nahi. 💀",
+    "Market ne confidence ka recharge khatam kar diya kya? 😂 Loss ko chase karna aag pe petrol daalne jaisa ho sakta hai.",
+    "Aaj market ne tera ego stop-loss kar diya. 🤡 Thoda pause le; ek loss ko teen losses ki franchise mat bana.",
+  ],
+
+  profit: [
+    "OHO, green numbers! 🤑 Nawab sahab ab khud ko Dalal Street ka sultan samajh rahe hain!",
+    "Profit aaya aur attitude ka IPO launch ho gaya! 😂 Ek green result ko lifetime guarantee mat samajhna.",
+    "Mubarak ho, sher! 👑 Bas profit dekh ke risk limit ko retirement pe mat bhej dena.",
+    "Portfolio green? Aaj biryani, kal bhi risk management. 🤑 Overconfidence ka bill market kabhi bhi bhej sakta hai.",
+  ],
+
+  portfolio: [
+    "Portfolio ka family function chal raha hai kya? 😂 Har holding ko jagah dene se pehle uska risk aur role samajh.",
+    "Nawab, portfolio sirf green-red ka wallpaper nahi. Open positions, current value aur realised P&L bhi dekh.",
+    "Saara paisa ek hi jagah? Bhai, portfolio nahi, one-man band hai. 🎸 Concentration risk samajhna zaroori hai.",
+  ],
+
+  market: [
+    "Market roller coaster hai, Nawab. 🎢 Seat belt ka naam risk management hai; aankh band karke baithna strategy nahi.",
+    "Bull market mein sab genius, bear market mein sab philosopher. 😂 Plan dono seasons ke liye chahiye.",
+    "Chart ko dekh, par candle mein apna future mat dhoondh. 🔮 Crystal ball ka server permanently down hai.",
+  ],
+
+  roast: [
+    "Teri strategy itni secret hai ki tujhe khud bhi nahi pata kya chal raha hai. 💀",
+    "Confidence: 100%. Research: 'Bhai ne group mein bola tha.' 😂",
+    "Tu buy button aise dabata hai jaise last samosa tere saamne ho. 🥟",
+    "Risk management tujhe dhoondh raha hai. Phone utha le, Nawab! 📞🤡",
+    "Portfolio ko strategy chahiye, tu usko motivational quotes de raha hai. 😭",
+  ],
+
+  recover: [
+    "Loss recover karne ki jaldi mein double risk lena? Wah, aag lagi hai toh petrol ki bucket bhi le aa. 💀 Pehle ruk, position aur risk review kar.",
+    "Bhai, market tera udhaar nahi jo kal pakka wapas karega. 😂 Recovery guaranteed nahi hoti; impulsive trades se bach.",
+    "Mission 'loss wapas lao' ko thoda pause kar. Dimaag thanda kar, actual P&L dekh, aur bina plan ke next trade mat lena.",
+  ],
+
+  tip: [
+    "Sure-shot tip? Haan: market tujhe surprise kar sakta hai. 😂 Main memes aur basic risk reminders deta hoon, guaranteed calls nahi.",
+    "Main Nuksaan Nawab hoon, Baba Predictanand nahi. 🔮 Price ka future ya guaranteed target invent nahi karunga.",
+    "Tip chahiye toh pehle checklist: thesis kya hai, risk kitna hai, aur galat hue toh plan kya hai? Magic number mere paas nahi. 🤡",
+  ],
+
+  thanks: [
+    "Shukriya, Nawab! 😂 Ab apne risk limits ko bhi ek thank-you bol dena.",
+    "Anytime, sher! Main jokes free deta hoon; market ki tuition apne risk pe. 👑",
+  ],
+
+  help: [
+    "Topic bol, Nawab: buy, sell, profit, loss, recovery, portfolio ya full roast. 😂",
+    "Menu-e-bakchodi ready hai! 🤡 Apna market scene bata ya quick suggestion pe tap kar.",
+  ],
+
+  followup: [
+    "Pichhli baat yaad hai, Nawab. 😂 Lekin mujhe abhi live portfolio numbers nahi dikh rahe. Apna actual P&L bata, phir usi scene ka roast karte hain.",
+    "Haan bhai, usi market drama ka sequel chal raha hai. 🤡 Thoda detail de—trade execute hua, P&L badla, ya bas dimaag mein chart ghoom raha hai?",
+  ],
+
+  fallback: [
+    "Bhai, itna suspense toh market opening mein bhi nahi hota. 😂 Buy, sell, profit, loss ya portfolio ka scene thoda clear kar.",
+    "Samjha nahi, Nawab sahab. 🤡 Seedha bata kya hua—profit, nuksaan, entry, exit ya strategy ka roast?",
+    "Mera crystal ball buffering pe hai. 🔮 Apna market scene ek line mein bata; phir roast relevant milega.",
+  ],
+};
 
 const suggestions = [
   "Roast me 🤡",
   "Market crash 📉",
-  "Buy advice 😂",
+  "Buy scene 😂",
   "Profit celebration 🤑",
+  "Portfolio roast 💼",
 ];
 
-function getReply(message) {
+function chooseReply(category, lastReply = "") {
+  const options = replyBank[category] || replyBank.fallback;
+  const alternatives = options.filter((reply) => reply !== lastReply);
+
+  return (alternatives.length ? alternatives : options)[
+    Math.floor(Math.random() * (alternatives.length || options.length))
+  ];
+}
+
+function detectIntent(message) {
   const text = message.toLowerCase().trim();
 
-  // Roast requests take priority over general stock keywords.
+  const has = (...patterns) =>
+    patterns.some((pattern) => pattern.test(text));
+
+  // Check specific intents before broad market words.
   if (
-    text.includes("roast") ||
-    text.includes("insult me") ||
-    text.includes("meri beizzati")
+    has(
+      /\broast\b/,
+      /\bbeizzati\b/,
+      /\binsult me\b/,
+      /\bbakchodi\b/,
+      /\bmake fun\b/,
+      /\bmazak uda\b/,
+    )
   ) {
-    return categories.find((item) =>
-      item.keys.includes("roast")
-    ).replies[
-      Math.floor(
-        Math.random() *
-          categories.find((item) => item.keys.includes("roast"))
-            .replies.length,
-      )
-    ];
+    return "roast";
   }
 
-  const match = categories.find((category) =>
-    category.keys.some((key) => text.includes(key)),
+  if (
+    has(
+      /\bthank(?:s| you)?\b/,
+      /\bshukriya\b/,
+      /\bthx\b/,
+      /\bdhanyavaad\b/,
+    )
+  ) {
+    return "thanks";
+  }
+
+  if (
+    has(
+      /\brecover(?:y)?\b/,
+      /\bpaise wapas\b/,
+      /\bloss recover\b/,
+      /\bnuksaan recover\b/,
+      /\bwapas kama\b/,
+      /\bmake it back\b/,
+    )
+  ) {
+    return "recover";
+  }
+
+  if (
+    has(
+      /\bsure shot\b/,
+      /\bguarantee(?:d)?\b/,
+      /\bpredict(?:ion)?\b/,
+      /\btarget\b/,
+      /\bprice kaha\b/,
+      /\btip\b/,
+      /\bnext move\b/,
+    )
+  ) {
+    return "tip";
+  }
+
+  if (
+    has(
+      /\bhello\b/,
+      /\bhi\b/,
+      /\bhey\b/,
+      /\bnamaste\b/,
+      /\badaab\b/,
+      /\bkaise ho\b/,
+      /\bsup\b/,
+    )
+  ) {
+    return "greeting";
+  }
+
+  // Mixed P&L statements: prefer the latest explicit outcome.
+  const lossMatch = Math.max(
+    text.lastIndexOf("loss"),
+    text.lastIndexOf("nuksaan"),
+    text.lastIndexOf("nuksan"),
+    text.lastIndexOf("ghata"),
+    text.lastIndexOf("red"),
   );
 
-  if (!match) {
-    return fallback[Math.floor(Math.random() * fallback.length)];
+  const profitMatch = Math.max(
+    text.lastIndexOf("profit"),
+    text.lastIndexOf("munafa"),
+    text.lastIndexOf("kamaya"),
+    text.lastIndexOf("green"),
+    text.lastIndexOf("gain"),
+  );
+
+  const mentionsLoss = lossMatch >= 0;
+  const mentionsProfit = profitMatch >= 0;
+
+  if (mentionsLoss && mentionsProfit) {
+    return lossMatch > profitMatch ? "loss" : "profit";
   }
 
-  return match.replies[
-    Math.floor(Math.random() * match.replies.length)
+  if (
+    has(
+      /\bloss\b/,
+      /\bnuksaan\b/,
+      /\bnuksan\b/,
+      /\bghata\b/,
+      /\bcrash\b/,
+      /\bred\b/,
+      /\bdown\b/,
+      /\bgir raha\b/,
+      /\bbear market\b/,
+    )
+  ) {
+    return "loss";
+  }
+
+  if (
+    has(
+      /\bprofit\b/,
+      /\bmunafa\b/,
+      /\bkamaya\b/,
+      /\bgain\b/,
+      /\bgreen\b/,
+      /\bcrorepati\b/,
+      /\brich\b/,
+      /\bpump\b/,
+    )
+  ) {
+    return "profit";
+  }
+
+  if (
+    has(
+      /\bportfolio\b/,
+      /\bholding(?:s)?\b/,
+      /\binvestment\b/,
+      /\bbalance\b/,
+      /\bposition(?:s)?\b/,
+      /\bp&l\b/,
+    )
+  ) {
+    return "portfolio";
+  }
+
+  if (
+    has(
+      /\bsell\b/,
+      /\bbech\b/,
+      /\bexit\b/,
+      /\bnikal du\b/,
+      /\bnikal doon\b/,
+    )
+  ) {
+    return "sell";
+  }
+
+  if (
+    has(
+      /\bbuy\b/,
+      /\bkharid\b/,
+      /\bpurchase\b/,
+      /\bentry\b/,
+      /\ble lu\b/,
+    )
+  ) {
+    return "buy";
+  }
+
+  if (
+    has(
+      /\bmarket\b/,
+      /\bstock\b/,
+      /\bshare\b/,
+      /\bnifty\b/,
+      /\bsensex\b/,
+      /\bbull\b/,
+      /\basset\b/,
+      /\bprice\b/,
+      /\bcandle\b/,
+    )
+  ) {
+    return "market";
+  }
+
+  if (
+    has(
+      /\bhelp\b/,
+      /\bwhat should i do\b/,
+      /\bkya karu\b/,
+      /\bsuggest\b/,
+      /\boptions\b/,
+    )
+  ) {
+    return "help";
+  }
+
+  return "fallback";
+}
+
+function makeBotReply(message, previousIntent, lastBotReply) {
+  const intent = detectIntent(message);
+  const text = message.toLowerCase().trim();
+
+  const followupPhrases = [
+    "ab kya",
+    "phir kya",
+    "aur bata",
+    "what now",
+    "then what",
+    "uske baad",
+    "ab kya karu",
+    "toh ab",
+    "same thing",
+    "aur",
   ];
+
+  const isShortFollowup =
+    text.split(/\s+/).length <= 5 &&
+    followupPhrases.some((phrase) => text.includes(phrase));
+
+  if (isShortFollowup && previousIntent) {
+    const contextualReply = chooseReply(
+      previousIntent,
+      lastBotReply,
+    );
+
+    return {
+      intent: previousIntent,
+      text: contextualReply,
+    };
+  }
+
+  return {
+    intent,
+    text: chooseReply(intent, lastBotReply),
+  };
 }
 
 export default function NuksaanNawab() {
@@ -131,39 +346,67 @@ export default function NuksaanNawab() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([
     {
-      id: 1,
+      id: "welcome",
       from: "bot",
-      text: "Adaab, mere Nawab! 👑 Main hoon Nuksaan Nawab 🤡 Buy, sell, market crash ya portfolio roast — hukam karo!",
+      text: "Adaab, mere Nawab! 👑 Main Nuksaan Nawab—market ka meme-baz. Buy, sell, profit, loss, recovery ya portfolio roast karwao. Jokes guaranteed; market predictions nahi! 😂",
     },
   ]);
+
+  const [previousIntent, setPreviousIntent] = useState(null);
+  const messagesRef = useRef(null);
+  const lastBotReplyRef = useRef("");
+
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTo({
+        top: messagesRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages, open]);
 
   function sendMessage(value = input) {
     const text = value.trim();
     if (!text) return;
 
+    const result = makeBotReply(
+      text,
+      previousIntent,
+      lastBotReplyRef.current,
+    );
+
     const now = Date.now();
 
     setMessages((current) => [
       ...current,
-      { id: now, from: "user", text },
       {
-        id: now + 1,
+        id: `${now}-user`,
+        from: "user",
+        text,
+      },
+      {
+        id: `${now}-bot`,
         from: "bot",
-        text: getReply(text),
+        text: result.text,
       },
     ]);
 
+    setPreviousIntent(result.intent);
+    lastBotReplyRef.current = result.text;
     setInput("");
   }
 
   function resetChat() {
     setMessages([
       {
-        id: Date.now(),
+        id: `${Date.now()}-welcome`,
         from: "bot",
-        text: "Nayi mehfil, naya nuksaan... mazaak kar raha hoon bhai! 😂 Bol, kya scene hai?",
+        text: "Nayi mehfil, naya drama! 😂 Bol Nawab, kis market scene ka roast chahiye?",
       },
     ]);
+
+    setPreviousIntent(null);
+    lastBotReplyRef.current = "";
   }
 
   return (
@@ -171,14 +414,18 @@ export default function NuksaanNawab() {
       {open && (
         <section
           className="nawab-window"
+          role="dialog"
           aria-label="Nuksaan Nawab chatbot"
+          aria-modal="false"
         >
           <header className="nawab-header">
-            <div className="nawab-avatar">🤡</div>
+            <div className="nawab-avatar" aria-hidden="true">
+              🤡
+            </div>
 
             <div className="nawab-heading">
               <strong>Nuksaan Nawab</strong>
-              <span>Royal bakchodi department 👑</span>
+              <span>Market ka drama, jokes ke saath 👑</span>
             </div>
 
             <button
@@ -200,10 +447,14 @@ export default function NuksaanNawab() {
           </header>
 
           <div className="nawab-disclaimer">
-            Virtual stock game · Memes, not guaranteed financial advice
+            Virtual stock game · Humour only · No guaranteed calls
           </div>
 
-          <div className="nawab-messages" aria-live="polite">
+          <div
+            className="nawab-messages"
+            aria-live="polite"
+            ref={messagesRef}
+          >
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -214,7 +465,10 @@ export default function NuksaanNawab() {
             ))}
           </div>
 
-          <div className="nawab-suggestions">
+          <div
+            className="nawab-suggestions"
+            aria-label="Suggested messages"
+          >
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion}
@@ -241,7 +495,11 @@ export default function NuksaanNawab() {
               maxLength={300}
             />
 
-            <button type="submit" aria-label="Send message">
+            <button
+              type="submit"
+              aria-label="Send message"
+              disabled={!input.trim()}
+            >
               ➤
             </button>
           </form>
@@ -259,3 +517,4 @@ export default function NuksaanNawab() {
     </div>
   );
 }
+
