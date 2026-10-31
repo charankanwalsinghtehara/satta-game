@@ -11,6 +11,65 @@ import MarketChart from "../components/MarketChart";
 import MemeCard from "../components/MemeCard";
 import PortfolioPnl from "../components/PortfolioPnl";
 
+function getMarketCommentary(trending, marketPaused) {
+  if (marketPaused) {
+    return {
+      emoji: "🛑",
+      title: "Market ki chai break",
+      message:
+        "Market paused hai, bhai. Abhi trade se zyada chai mein returns hain. ☕",
+    };
+  }
+
+  if (!trending) {
+    return {
+      emoji: "🤡",
+      title: "Market data ka intezaar",
+      message:
+        "Market ka server abhi so raha hai. Data aate hi bakchodi shuru hogi. 😴",
+    };
+  }
+
+  if (trending.change >= 3) {
+    return {
+      emoji: "🚀",
+      title: "Bulls ka DJ baj raha hai",
+      message: `${trending.symbol} ${trending.change.toFixed(2)}% up hai. FOMO mein apna wallet uda mat dena, bhai!`,
+    };
+  }
+
+  if (trending.change <= -3) {
+    return {
+      emoji: "💀",
+      title: "Market ne dhulai kar di",
+      message: `${trending.symbol} ${trending.change.toFixed(2)}% down hai. Panic mat kar; pehle numbers dekh.`,
+    };
+  }
+
+  if (trending.change > 0.25) {
+    return {
+      emoji: "📈",
+      title: "Thoda green, thodi umeed",
+      message: `${trending.symbol} halka sa upar hai. Bhai, abhi Lambo book mat karna.`,
+    };
+  }
+
+  if (trending.change < -0.25) {
+    return {
+      emoji: "📉",
+      title: "Market ka mood off",
+      message: `${trending.symbol} neeche hai. Market ko bhi Monday blues ho gaye lagte hain.`,
+    };
+  }
+
+  return {
+    emoji: "🗿",
+    title: "Market meditation mode",
+    message:
+      "Price mein zyada movement nahi. Market bhi soch raha hai aage kya karna hai.",
+  };
+}
+
 export default function Dashboard({
   balance,
   assets,
@@ -22,11 +81,22 @@ export default function Dashboard({
 }) {
   const trending = assets.reduce(
     (best, asset) =>
-      !best || Math.abs(asset.change) > Math.abs(best.change)
+      !best ||
+      Math.abs(asset.change) > Math.abs(best.change)
         ? asset
         : best,
-    null,
+    null
   );
+
+  const commentary = getMarketCommentary(
+    trending,
+    marketPaused
+  );
+
+  const activeEvents = Array.isArray(events) ? events : [];
+
+  const memeCaption =
+    activeEvents[0]?.commentary || commentary.message;
 
   return (
     <div className="page-stack">
@@ -39,7 +109,8 @@ export default function Dashboard({
             Market ka <span>mahaul.</span> 🎭
           </h1>
           <p className="muted">
-            Live market data and virtual trades, powered by your Django account.
+            Live market data and virtual trades, powered by
+            your Django account.
           </p>
         </div>
 
@@ -60,7 +131,8 @@ export default function Dashboard({
           </span>
           <p>Virtual wallet</p>
           <h2>
-            {balance.toLocaleString("en-IN")} <small>coins</small>
+            {Number(balance || 0).toLocaleString("en-IN")}{" "}
+            <small>coins</small>
           </h2>
           <span className="stat-note">
             Your Django account balance · BB
@@ -74,7 +146,7 @@ export default function Dashboard({
           <p>Listed assets</p>
           <h2>{assets.length}</h2>
           <span className="stat-note">
-            From the live market catalog
+            From the market catalog
           </span>
         </article>
 
@@ -98,7 +170,7 @@ export default function Dashboard({
           <p>Your rank</p>
           <h2>{rank > 0 ? `#${rank}` : "—"}</h2>
           <span className="stat-note">
-            Sign in to see your leaderboard rank
+            Your leaderboard rank
           </span>
         </article>
       </section>
@@ -155,12 +227,12 @@ export default function Dashboard({
         <div className="side-stack">
           <MemeCard
             meme={{
-              emoji: events.length ? "📣" : "💀",
-              caption:
-                events[0]?.commentary ||
-                "Buy high, panic higher. Bhai ki strategy alag hai.",
-              source: events.length
-                ? events[0].name
+              emoji: activeEvents.length
+                ? "📣"
+                : commentary.emoji,
+              caption: memeCaption,
+              source: activeEvents.length
+                ? activeEvents[0].name
                 : "Satta Bazar Originals",
             }}
           />
@@ -168,11 +240,18 @@ export default function Dashboard({
           <article className="panel activity-panel">
             <div className="panel-heading">
               <h2>Market ki bakchodi</h2>
-              <span className="muted small">Active events</span>
+              <span className="muted small">
+                {activeEvents.length
+                  ? `${activeEvents.length} active event(s)`
+                  : "Market commentary"}
+              </span>
             </div>
 
-            {events.slice(0, 3).map((event) => (
-              <div className="activity-row" key={event.id}>
+            {activeEvents.slice(0, 3).map((event) => (
+              <div
+                className="activity-row"
+                key={event.id}
+              >
                 <span className="activity-emoji">📣</span>
 
                 <div className="activity-copy">
@@ -184,10 +263,20 @@ export default function Dashboard({
               </div>
             ))}
 
-            {!events.length && (
-              <p className="muted small">
-                No active market events right now.
-              </p>
+            {!activeEvents.length && (
+              <div className="activity-row">
+                <span className="activity-emoji">
+                  {commentary.emoji}
+                </span>
+
+                <div className="activity-copy">
+                  <strong>{commentary.title}</strong>
+                  <p>{commentary.message}</p>
+                  <span className="muted small">
+                    Auto commentary · Not a scheduled event
+                  </span>
+                </div>
+              </div>
             )}
           </article>
         </div>
@@ -196,7 +285,9 @@ export default function Dashboard({
       <section className="section-block">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">LIVE FROM THE DJANGO API</p>
+            <p className="eyebrow">
+              LIVE FROM THE DJANGO API
+            </p>
             <h2>Trending assets</h2>
           </div>
 
@@ -218,7 +309,8 @@ export default function Dashboard({
             <div className="empty-state">
               <h3>No market assets are available.</h3>
               <p>
-                Check that the backend catalog has been seeded.
+                Check that the backend catalog has been seeded
+                and the market API is responding.
               </p>
             </div>
           )}
@@ -227,7 +319,8 @@ export default function Dashboard({
 
       <div className="disclaimer">
         <ArrowDownRight size={16} />
-        Satta Bazar is a virtual trading game. No real money, deposits, or prizes.
+        Satta Bazar is a virtual trading game. No real money,
+        deposits, or prizes.
       </div>
     </div>
   );
