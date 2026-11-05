@@ -1,53 +1,39 @@
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  History,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, History } from "lucide-react";
 import { getTrades } from "../../services/api";
-
-const formatNumber = (value) =>
-  Number(value || 0).toLocaleString("en-IN", {
-    maximumFractionDigits: 2,
-  });
 
 export default function TradeHistory() {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadTrades = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      setError("");
       const response = await getTrades();
-
-      const records = Array.isArray(response)
-        ? response
-        : response?.results || response?.trades || [];
-
-      setTrades(records);
+      setTrades(
+        Array.isArray(response)
+          ? response
+          : response.results || response.trades || []
+      );
+      setError("");
     } catch (err) {
-      setError(err?.message || "Unable to load trade history.");
+      setError(err.message || "Could not load trades.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadTrades();
-
-    const handleUpdate = () => void loadTrades();
-
-    window.addEventListener("portfolio:refresh", handleUpdate);
-    window.addEventListener("portfolio:updated", handleUpdate);
+    void load();
+    const timer = window.setInterval(load, 15000);
+    window.addEventListener("portfolio:refresh", load);
 
     return () => {
-      window.removeEventListener("portfolio:refresh", handleUpdate);
-      window.removeEventListener("portfolio:updated", handleUpdate);
+      window.clearInterval(timer);
+      window.removeEventListener("portfolio:refresh", load);
     };
-  }, [loadTrades]);
+  }, [load]);
 
   return (
     <section className="panel trade-history">
@@ -56,38 +42,26 @@ export default function TradeHistory() {
           <p className="eyebrow">YOUR ACTIVITY</p>
           <h2><History size={19} /> Trade History</h2>
         </div>
-
-        <button
-          type="button"
-          className="portfolio-refresh"
-          onClick={() => void loadTrades()}
-        >
-          <RefreshCw size={15} /> Refresh
+        <button className="portfolio-refresh" onClick={load}>
+          Refresh
         </button>
       </div>
 
       {loading ? (
-        <p className="trade-history-message">Loading trades...</p>
+        <p>Loading trades...</p>
       ) : error ? (
-        <div className="trade-history-message trade-history-error">
-          {error}
-          <button type="button" onClick={() => void loadTrades()}>
-            Retry
-          </button>
-        </div>
+        <p className="trade-history-error">{error}</p>
       ) : trades.length === 0 ? (
-        <div className="trade-history-empty">
-          <span>📭</span>
-          <p>No trades yet. Your activity will appear here.</p>
-        </div>
+        <p className="trade-history-empty">No trades yet.</p>
       ) : (
         <div className="trade-history-list">
           {trades.map((trade, index) => {
-            const isBuy = String(trade.side || trade.type || "").toLowerCase() === "buy";
+            const side = String(
+              trade.side || trade.type || ""
+            ).toLowerCase();
+            const isBuy = side === "buy";
             const quantity = Number(trade.quantity || 0);
-            const price = Number(
-              trade.price ?? trade.execution_price ?? 0
-            );
+            const price = Number(trade.price || trade.execution_price || 0);
 
             return (
               <article
@@ -95,21 +69,17 @@ export default function TradeHistory() {
                 key={trade.id || `${trade.symbol}-${index}`}
               >
                 <div className={`trade-history-icon ${isBuy ? "buy" : "sell"}`}>
-                  {isBuy ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                  {isBuy ? <ArrowDownLeft /> : <ArrowUpRight />}
                 </div>
-
                 <div className="trade-history-info">
-                  <strong>{trade.name || trade.symbol || "Asset"}</strong>
-                  <span>
-                    {String(trade.side || trade.type || "trade").toUpperCase()}
-                    {" · "}
-                    {quantity} units
-                  </span>
+                  <strong>{trade.name || trade.symbol}</strong>
+                  <span>{side.toUpperCase()} · {quantity} units</span>
                 </div>
-
                 <div className="trade-history-value">
-                  <strong>{formatNumber(quantity * price)} BB</strong>
-                  <span>{formatNumber(price)} BB / unit</span>
+                  <strong>
+                    {(quantity * price).toLocaleString("en-IN")} BB
+                  </strong>
+                  <span>{price.toLocaleString("en-IN")} per unit</span>
                 </div>
               </article>
             );
