@@ -1,9 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, RefreshCw } from "lucide-react";
 import Swal from "sweetalert2";
 import { ApiError, getPortfolio } from "../../services/api";
@@ -49,11 +45,42 @@ function crossed(previous, current, threshold) {
     : previous > threshold && current <= threshold;
 }
 
+function normalizePortfolio(data) {
+  const positions = Array.isArray(data.positions)
+    ? data.positions
+    : [];
+
+  const unrealized = n(data.unrealized_pnl);
+  const marketValue = n(data.market_value);
+  const cashBalance = n(data.cash_balance);
+  const realized = n(data.realized_pnl);
+  const equity = n(data.equity);
+
+  const costBasis = positions.reduce(
+    (sum, position) =>
+      sum +
+      n(position.quantity) * n(position.average_entry_price),
+    0
+  );
+
+  const percent =
+    costBasis > 0 ? (unrealized / costBasis) * 100 : 0;
+
+  return {
+    positions,
+    unrealized,
+    marketValue,
+    cashBalance,
+    realized,
+    equity,
+    percent,
+  };
+}
+
 function Stat({ label, value, note, positive }) {
   return (
     <article className="portfolio-pnl-stat">
       <span>{label}</span>
-
       <strong
         className={
           positive === undefined
@@ -65,7 +92,6 @@ function Stat({ label, value, note, positive }) {
       >
         {value}
       </strong>
-
       <small>{note || "Current value"}</small>
     </article>
   );
@@ -76,10 +102,7 @@ export default function PortfolioPnl() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [pnlDelta, setPnlDelta] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState(null);
 
-  const previousUnrealized = useRef(null);
   const previousPercent = useRef(null);
   const notified = useRef(new Set());
   const inFlight = useRef(false);
@@ -90,48 +113,26 @@ export default function PortfolioPnl() {
 
     inFlight.current = true;
 
-    if (manual) setRefreshing(true);
+    if (manual && mounted.current) {
+      setRefreshing(true);
+    }
 
     try {
       const data = await getPortfolio();
 
       if (!data || typeof data !== "object") {
-        throw new Error(
-          "The portfolio API returned invalid data."
-        );
+        throw new Error("Portfolio API returned invalid data.");
       }
 
-      const positions = Array.isArray(data.positions)
-        ? data.positions
-        : [];
-
-      const unrealized = n(data.unrealized_pnl);
-      const marketValue = n(data.market_value);
-      const cashBalance = n(data.cash_balance);
-      const realized = n(data.realized_pnl);
-      const equity = n(data.equity);
-
-      const costBasis = positions.reduce(
-        (sum, position) =>
-          sum +
-          n(position.quantity) *
-            n(position.average_entry_price),
-        0
-      );
-
-      const percent =
-        costBasis > 0
-          ? (unrealized / costBasis) * 100
-          : 0;
-
+      const next = normalizePortfolio(data);
       const previous = previousPercent.current;
 
-      if (previous !== null && costBasis > 0) {
+      if (previous !== null && next.positions.length > 0) {
         for (const threshold of THRESHOLDS) {
           const key = String(threshold);
 
           if (
-            crossed(previous, percent, threshold) &&
+            crossed(previous, next.percent, threshold) &&
             !notified.current.has(key)
           ) {
             notified.current.add(key);
@@ -140,29 +141,10 @@ export default function PortfolioPnl() {
         }
       }
 
-      previousPercent.current = percent;
-
-      if (previousUnrealized.current !== null) {
-        setPnlDelta(
-          unrealized - previousUnrealized.current
-        );
-      }
-
-      previousUnrealized.current = unrealized;
+      previousPercent.current = next.percent;
 
       if (mounted.current) {
-        setLastUpdated(new Date());
-
-        setPortfolio({
-          positions,
-          unrealized,
-          marketValue,
-          cashBalance,
-          realized,
-          equity,
-          percent,
-        });
-
+        setPortfolio(next);
         setError("");
       }
     } catch (err) {
@@ -171,9 +153,7 @@ export default function PortfolioPnl() {
           err instanceof ApiError &&
           [401, 403].includes(err.status)
         ) {
-          setError(
-            "Please log in to view your portfolio P&L."
-          );
+          setError("Please log in to view your portfolio P&L.");
         } else {
           setError(
             err?.message ||
@@ -186,10 +166,7 @@ export default function PortfolioPnl() {
 
       if (mounted.current) {
         setLoading(false);
-
-        if (manual) {
-          setRefreshing(false);
-        }
+        setRefreshing(false);
       }
     }
   }, []);
@@ -203,74 +180,17 @@ export default function PortfolioPnl() {
       void refresh();
     }, 1000);
 
-    const onTradeUpdated = (event) => {
-      const data = event.detail;
-
-      if (data && typeof data === "object") {
-        const positions = Array.isArray(data.positions)
-          ? data.positions
-          : [];
-
-        const unrealized = n(data.unrealized_pnl);
-        const marketValue = n(data.market_value);
-        const cashBalance = n(data.cash_balance);
-        const realized = n(data.realized_pnl);
-        const equity = n(data.equity);
-
-        const costBasis = positions.reduce(
-          (sum, position) =>
-            sum +
-            n(position.quantity) *
-              n(position.average_entry_price),
-          0
-        );
-
-        const percent =
-          costBasis > 0
-            ? (unrealized / costBasis) * 100
-            : 0;
-
-        previousPercent.current = percent;
-
-        setPortfolio({
-          positions,
-          unrealized,
-          marketValue,
-          cashBalance,
-          realized,
-          equity,
-          percent,
-        });
-
-        setError("");
-        setLoading(false);
-      }
-
+    const onTradeUpdated = () => {
       void refresh(true);
     };
 
-    window.addEventListener(
-      "portfolio:updated",
-      onTradeUpdated
-    );
-
-    window.addEventListener(
-      "portfolio:refresh",
-      onTradeUpdated
-    );
+    window.addEventListener("portfolio:updated", onTradeUpdated);
 
     return () => {
       mounted.current = false;
-
       window.clearInterval(timer);
-
       window.removeEventListener(
         "portfolio:updated",
-        onTradeUpdated
-      );
-
-      window.removeEventListener(
-        "portfolio:refresh",
         onTradeUpdated
       );
     };
@@ -288,48 +208,27 @@ export default function PortfolioPnl() {
           </h2>
 
           <p className="portfolio-pnl-subtitle">
-            Live portfolio pulse · refreshes every second ·
-            virtual trading only
+            Auto-refresh every second · Virtual trading only
           </p>
         </div>
 
-        <div className="pnl-heading-actions">
-          <span className="pnl-live-indicator">
-            <i />
-            LIVE{" "}
-            {lastUpdated
-              ? `· ${lastUpdated.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                })}`
-              : "· SYNCING"}
-          </span>
-
-          <button
-            className="portfolio-refresh"
-            type="button"
-            disabled={refreshing}
-            onClick={() => void refresh(true)}
-          >
-            <RefreshCw
-              size={15}
-              className={
-                refreshing ? "is-spinning" : ""
-              }
-            />
-            Refresh
-          </button>
-        </div>
+        <button
+          className="portfolio-refresh"
+          type="button"
+          disabled={refreshing}
+          onClick={() => void refresh(true)}
+        >
+          <RefreshCw
+            size={15}
+            className={refreshing ? "is-spinning" : ""}
+          />
+          Refresh
+        </button>
       </div>
 
       {error && (
-        <div
-          className="portfolio-pnl-error"
-          role="alert"
-        >
+        <div className="portfolio-pnl-error" role="alert">
           {error}
-
           <button
             type="button"
             onClick={() => void refresh(true)}
@@ -340,81 +239,13 @@ export default function PortfolioPnl() {
       )}
 
       {loading && !portfolio && (
-        <p className="portfolio-pnl-muted">
+        <p className="portfolio-pnl-loading">
           Loading your portfolio…
         </p>
       )}
 
       {portfolio && (
         <>
-          <div
-            className={`pnl-live-banner ${
-              portfolio.unrealized >= 0
-                ? "is-up"
-                : "is-down"
-            }`}
-          >
-            <div className="pnl-live-label">
-              <span>YOUR LIVE FLOATING P&amp;L</span>
-
-              <b>
-                {portfolio.unrealized >= 0
-                  ? "▲ PROFIT ZONE"
-                  : "▼ LOSS ZONE"}
-              </b>
-            </div>
-
-            <strong className="pnl-live-value">
-              {portfolio.unrealized > 0 ? "+" : ""}
-              {money(portfolio.unrealized)}
-              <small> BB</small>
-            </strong>
-
-            <div className="pnl-live-bottom">
-              <span>
-                {portfolio.percent > 0 ? "+" : ""}
-                {portfolio.percent.toFixed(2)}% return
-                on open positions
-              </span>
-
-              <span
-                className={
-                  pnlDelta > 0
-                    ? "pnl-positive"
-                    : pnlDelta < 0
-                      ? "pnl-negative"
-                      : ""
-                }
-              >
-                {pnlDelta > 0
-                  ? "▲ "
-                  : pnlDelta < 0
-                    ? "▼ "
-                    : "• "}
-
-                {pnlDelta === 0
-                  ? "No change"
-                  : `${
-                      pnlDelta > 0 ? "+" : ""
-                    }${money(pnlDelta)} BB since last tick`}
-              </span>
-            </div>
-
-            <div className="pnl-live-track">
-              <span
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.max(
-                      2,
-                      Math.abs(portfolio.percent) * 5
-                    )
-                  )}%`,
-                }}
-              />
-            </div>
-          </div>
-
           <div className="portfolio-pnl-grid">
             <Stat
               label="Cash balance"
@@ -424,20 +255,14 @@ export default function PortfolioPnl() {
 
             <Stat
               label="Unrealized P&L"
-              value={`${
-                portfolio.unrealized > 0 ? "+" : ""
-              }${money(portfolio.unrealized)} BB`}
-              note={`${
-                portfolio.percent > 0 ? "+" : ""
-              }${portfolio.percent.toFixed(2)}% on open positions`}
+              value={`${portfolio.unrealized > 0 ? "+" : ""}${money(portfolio.unrealized)} BB`}
+              note={`${portfolio.percent > 0 ? "+" : ""}${portfolio.percent.toFixed(2)}% on open positions`}
               positive={portfolio.unrealized >= 0}
             />
 
             <Stat
               label="Realized P&L"
-              value={`${
-                portfolio.realized > 0 ? "+" : ""
-              }${money(portfolio.realized)} BB`}
+              value={`${portfolio.realized > 0 ? "+" : ""}${money(portfolio.realized)} BB`}
               note="Completed sells"
               positive={portfolio.realized >= 0}
             />
@@ -445,126 +270,104 @@ export default function PortfolioPnl() {
             <Stat
               label="Total equity"
               value={`${money(portfolio.equity)} BB`}
-              note={`Open assets: ${money(
-                portfolio.marketValue
-              )} BB`}
+              note={`Open assets: ${money(portfolio.marketValue)} BB`}
             />
           </div>
 
           <div className="portfolio-position-heading">
             <h3>Open positions</h3>
-            <span>
-              {portfolio.positions.length} assets
-            </span>
+            <span>{portfolio.positions.length} assets</span>
           </div>
 
           {portfolio.positions.length > 0 ? (
             <div className="portfolio-position-list">
-              {portfolio.positions.map(
-                (position, index) => {
-                  const pnl = n(
-                    position.unrealized_pnl
-                  );
+              {portfolio.positions.map((position, index) => {
+                const pnl = n(position.unrealized_pnl);
+                const quantity = n(position.quantity);
+                const entry = n(position.average_entry_price);
+                const current = n(position.current_price);
 
-                  const quantity = n(
-                    position.quantity
-                  );
+                const basis = quantity * entry;
+                const percent =
+                  basis > 0 ? (pnl / basis) * 100 : 0;
 
-                  const entry = n(
-                    position.average_entry_price
-                  );
+                return (
+                  <div
+                    className="portfolio-position-row"
+                    key={position.symbol || index}
+                  >
+                    <div className="portfolio-position-name">
+                      <strong>
+                        {position.name || position.symbol}
+                      </strong>
 
-                  const current = n(
-                    position.current_price
-                  );
-
-                  const basis = quantity * entry;
-
-                  const percent =
-                    basis > 0
-                      ? (pnl / basis) * 100
-                      : 0;
-
-                  return (
-                    <div
-                      className="portfolio-position-row"
-                      key={position.symbol || index}
-                    >
-                      <div className="portfolio-position-name">
-                        <strong>
-                          {position.name ||
-                            position.symbol}
-                        </strong>
-
-                        <span>
-                          {position.symbol} · Qty{" "}
-                          {quantity}
-                        </span>
-                      </div>
-
-                      <div className="portfolio-position-cell">
-                        <span>Entry price</span>
-                        <strong>
-                          {money(entry)} BB
-                        </strong>
-                      </div>
-
-                      <div className="portfolio-position-cell">
-                        <span>Current price</span>
-                        <strong>
-                          {money(current)} BB
-                        </strong>
-                      </div>
-
-                      <div className="portfolio-position-cell">
-                        <span>Unrealized P&amp;L</span>
-
-                        <strong
-                          className={
-                            pnl >= 0
-                              ? "pnl-positive"
-                              : "pnl-negative"
-                          }
-                        >
-                          {pnl > 0 ? "+" : ""}
-                          {money(pnl)} BB
-                        </strong>
-
-                        <small
-                          className={
-                            pnl >= 0
-                              ? "pnl-positive"
-                              : "pnl-negative"
-                          }
-                        >
-                          {percent > 0 ? "+" : ""}
-                          {percent.toFixed(2)}%
-                        </small>
-                      </div>
+                      <span>
+                        {position.symbol} · Qty {quantity}
+                      </span>
                     </div>
-                  );
-                }
-              )}
+
+                    <div className="portfolio-position-price">
+                      <span>Entry price</span>
+                      <strong>{money(entry)} BB</strong>
+                    </div>
+
+                    <div className="portfolio-position-price">
+                      <span>Current price</span>
+                      <strong>{money(current)} BB</strong>
+                    </div>
+
+                    <div className="portfolio-position-pnl">
+                      <span>Unrealized P&amp;L</span>
+
+                      <strong
+                        className={
+                          pnl >= 0
+                            ? "pnl-positive"
+                            : "pnl-negative"
+                        }
+                      >
+                        {pnl > 0 ? "+" : ""}
+                        {money(pnl)} BB
+                      </strong>
+
+                      <small
+                        className={
+                          pnl >= 0
+                            ? "pnl-positive"
+                            : "pnl-negative"
+                        }
+                      >
+                        {percent > 0 ? "+" : ""}
+                        {percent.toFixed(2)}%
+                      </small>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <p className="portfolio-pnl-muted">
-              No open positions yet. Buy an asset to track
-              its unrealized P&amp;L.
-            </p>
+            <div className="portfolio-pnl-empty">
+              <span>📊</span>
+              <p>
+                No open positions yet. Buy an asset to track its
+                unrealized P&amp;L.
+              </p>
+            </div>
           )}
 
           <p className="portfolio-pnl-footnote">
-            Unrealized P&amp;L tracks open positions.
-            Realized P&amp;L tracks completed sells. Prices
-            depend on the backend market engine.
+            <Activity size={14} />
+            Unrealized P&amp;L tracks open positions. Realized
+            P&amp;L tracks completed sells. Prices depend on the
+            backend market engine.
           </p>
         </>
       )}
 
       {!loading && !portfolio && error && (
-        <p className="portfolio-pnl-muted">
-          Your figures will appear once the portfolio API
-          is reachable.
+        <p className="portfolio-pnl-loading">
+          Your figures will appear once the portfolio API is
+          reachable.
         </p>
       )}
     </section>
