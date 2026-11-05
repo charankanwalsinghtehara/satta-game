@@ -43,14 +43,64 @@ export default function Dashboard({
 
   return (
     <div className="page-stack">
+      <section className="chaos-hero">
+        <div className="chaos-hero-noise" />
+
+        <div className="chaos-hero-copy">
+          <p className="eyebrow">
+            <span className="hero-live-dot" />
+            THE CHAOS EXCHANGE · LIVE TERMINAL
+          </p>
+
+          <h1>
+            Trade the <span>madness.</span>
+          </h1>
+
+          <p>
+            Buy the hype. Sell the panic. Track every virtual
+            coin in real time.
+          </p>
+
+          <div className="hero-tags">
+            <span>⚡ INSTANT P&amp;L</span>
+            <span>🎭 MEME-POWERED MARKETS</span>
+            <span>🪙 ZERO REAL MONEY</span>
+          </div>
+        </div>
+
+        <div className="hero-orbit" aria-hidden="true">
+          <div className="orbit-ring orbit-ring-one" />
+          <div className="orbit-ring orbit-ring-two" />
+          <div className="orbit-core">
+            ₹<small>BB</small>
+          </div>
+          <span className="orbit-token token-one">↗</span>
+          <span className="orbit-token token-two">₿</span>
+          <span className="orbit-token token-three">✦</span>
+        </div>
+
+        <div className="hero-bottom-line">
+          <span>MARKET STATUS</span>
+          <strong>
+            {marketPaused ? "PAUSED" : "● LIVE"}
+          </strong>
+          <span>YOUR VIRTUAL WALLET</span>
+          <strong>
+            {balance.toLocaleString("en-IN")} BB
+          </strong>
+        </div>
+      </section>
+
       <section className="welcome-row">
         <div>
           <p className="eyebrow">
             FICTIONAL ASSETS · VIRTUAL CURRENCY ONLY
           </p>
+
           <h1>
-            Market ka <span>mahaul.</span> 🎭
+            Your market <span>dashboard.</span> 🎭
           </h1>
+
           <p className="muted">
             Live market data and virtual trades, powered by your
             Django account.
