@@ -73,7 +73,6 @@ function classifyOutcome(type, message = "") {
   const profitPattern =
     /\b(profit|profitable|gain|gained|earned|kamaya|munafa|positive|green)\b|profit mein|faayde mein/;
 
-  // Avoid treating a generic trade roast as proof of actual P&L.
   if (lossPattern.test(text)) return "loss";
   if (profitPattern.test(text)) return "profit";
 
@@ -82,22 +81,30 @@ function classifyOutcome(type, message = "") {
 
 function getReaction(type, message) {
   const outcome = classifyOutcome(type, message);
-  return { outcome, reaction: reactions[outcome] };
+
+  return {
+    outcome,
+    reaction: reactions[outcome],
+  };
 }
 
 export function showTradePopup(type, message = "") {
   const normalizedType = type === "sell" ? "sell" : "buy";
-  const { outcome, reaction } = getReaction(normalizedType, message);
+  const { outcome, reaction } = getReaction(
+    normalizedType,
+    message
+  );
 
   const safeMessage = escapeHtml(
     message ||
       (normalizedType === "buy"
         ? "Virtual buy successful. Entry ho gayi!"
-        : "Virtual sell successful. Exit ho gaya!"),
+        : "Virtual sell successful. Exit ho gaya!")
   );
 
   Swal.fire({
     title: reaction.heading,
+
     html: `
       <div style="text-align:center;">
         <p style="
@@ -151,20 +158,23 @@ export function showTradePopup(type, message = "") {
         </p>
       </div>
     `,
+
     background: "#18181b",
     color: "#fafafa",
     confirmButtonText: "Samajh Gaya 😂",
     confirmButtonColor: reaction.color,
+
     customClass: {
       popup: "satta-trade-popup",
       confirmButton: "satta-trade-confirm",
     },
+
     buttonsStyling: true,
     showCloseButton: true,
     allowOutsideClick: true,
     width: 480,
+
     didOpen: () => {
-      // One context-matched sound per successful trade popup.
       void playTradeSound(normalizedType, outcome);
     },
   });
