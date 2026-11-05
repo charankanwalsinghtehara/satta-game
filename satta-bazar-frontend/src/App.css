@@ -2265,6 +2265,106 @@ form.auth-panel .auth-switch:hover {
     padding: 4px 6px;
   }
 
+/* Dashboard highlights */
+
+.dashboard-highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-highlight-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 19px;
+  background: linear-gradient(145deg, #1b1c2c, #171825);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.dashboard-highlight-card:hover {
+  transform: translateY(-3px);
+  border-color: #a78bfa55;
+}
+
+.dashboard-highlight-icon {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+
+.dashboard-highlight-icon.positive {
+  color: #86efac;
+  background: #4ade8018;
+}
+
+.dashboard-highlight-icon.negative {
+  color: #fda4af;
+  background: #fb718518;
+}
+
+.dashboard-highlight-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.dashboard-highlight-card h3 {
+  margin: 5px 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+}
+
+.dashboard-highlight-card p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.positive-text {
+  color: #86efac;
+}
+
+.negative-text {
+  color: #fda4af;
+}
+
+.dashboard-chart-empty {
+  min-height: 225px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.dashboard-chart-empty svg {
+  color: var(--purple);
+  opacity: 0.7;
+}
+
+.dashboard-chart-empty p {
+  margin: 0;
+  font-size: 12px;
+}
+
+@media (max-width: 650px) {
+  .dashboard-highlight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-highlight-card {
+    padding: 15px;
+  }
+}
+
   .wallet-copy strong {
     font-size: 10px;
   }
