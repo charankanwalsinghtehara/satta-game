@@ -1,5 +1,14 @@
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  LayoutDashboard,
+  CandlestickChart,
+  Trophy,
+  History,
+  Menu,
+  X,
+} from "lucide-react";
+
 import Navbar from "./components/Navbar";
 import NuksaanNawab from "./components/NuksaanNawab";
 import Dashboard from "./pages/Dashboard";
@@ -7,8 +16,10 @@ import Markets from "./pages/Markets";
 import Leaderboard from "./pages/Leaderboard";
 import AuthPage from "./pages/AuthPage";
 import TradeHistory from "./pages/TradeHistory";
+
 import {
   getMarketOverview,
+  getMarketMovers,
   getLeaderboard,
   getMe,
   getWallet,
@@ -18,22 +29,29 @@ import {
   buyAsset,
   sellAsset,
 } from "../services/api";
+
 import "./App.css";
 
 export default function App() {
   const [page, setPage] = useState("dashboard");
   const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
+
   const [assets, setAssets] = useState([]);
   const [marketData, setMarketData] = useState([]);
   const [rankings, setRankings] = useState([]);
   const [events, setEvents] = useState([]);
+
   const [marketPaused, setMarketPaused] = useState(false);
   const [rank, setRank] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [authMode, setAuthMode] = useState("login");
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
+
   const [authForm, setAuthForm] = useState({
     username: "",
     email: "",
@@ -42,33 +60,96 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [market, wallet, leaderboard] = await Promise.all([
-        getMarketOverview(),
-        getWallet(),
-        getLeaderboard(),
-      ]);
+      const [market, moversResponse, wallet, leaderboard] =
+        await Promise.all([
+          getMarketOverview(),
+          getMarketMovers(),
+          getWallet(),
+          getLeaderboard(),
+        ]);
 
-      const rawAssets = market.assets || market.results || [];
+      // Backend market overview returns assets with current_price.
+      const rawAssets = Array.isArray(market?.assets)
+        ? market.assets
+        : Array.isArray(market?.results)
+          ? market.results
+          : [];
 
-      setAssets(
-        rawAssets.map((asset) => ({
-          ...asset,
-          symbol: asset.symbol,
-          price: Number(asset.price || 0),
-          change: Number(asset.change ?? asset.change_percent ?? 0),
-        }))
+      // Backend market movers returns { movers: [...] }.
+      const movers = Array.isArray(moversResponse)
+        ? moversResponse
+        : moversResponse?.movers ||
+          moversResponse?.results ||
+          [];
+
+      const moversBySymbol = Object.fromEntries(
+        movers.map((item) => [item.symbol, item])
       );
 
-      setMarketData(market.history || market.market_history || []);
-      setMarketPaused(Boolean(market.paused));
-      setBalance(Number(wallet.balance ?? wallet.coins ?? 0));
+      const updatedAssets = rawAssets.map((asset) => {
+        const mover = moversBySymbol[asset.symbol] || {};
+
+        return {
+          ...asset,
+
+          // Keep both names so existing components can use either.
+          current_price: Number(
+            asset.current_price ??
+            mover.price ??
+            asset.price ??
+            0
+          ),
+
+          price: Number(
+            asset.current_price ??
+            mover.price ??
+            asset.price ??
+            0
+          ),
+
+          change: Number(
+            mover.change_percent ??
+            mover.change ??
+            asset.change ??
+            0
+          ),
+
+          change_percent: Number(
+            mover.change_percent ??
+            mover.change ??
+            asset.change_percent ??
+            0
+          ),
+        };
+      });
+
+      setAssets(updatedAssets);
+
+      setMarketData(
+        market?.history ||
+        market?.market_history ||
+        []
+      );
+
+      setMarketPaused(Boolean(market?.paused));
+
+      setEvents(
+        market?.active_events ||
+        market?.events ||
+        []
+      );
+
+      setBalance(
+        Number(wallet?.balance ?? wallet?.coins ?? 0)
+      );
 
       const players = Array.isArray(leaderboard)
         ? leaderboard
-        : leaderboard.results || leaderboard.rankings || [];
+        : leaderboard?.results ||
+          leaderboard?.rankings ||
+          [];
 
       setRankings(players);
-      setEvents(market.events || []);
     } catch (error) {
       console.error("Refresh failed:", error);
     } finally {
@@ -82,12 +163,19 @@ export default function App() {
     async function initialize() {
       try {
         const currentUser = await getMe();
-        if (active && currentUser) setUser(currentUser);
+
+        if (active && currentUser) {
+          setUser(currentUser.user || currentUser);
+        }
       } catch {
-        if (active) setUser(null);
+        if (active) {
+          setUser(null);
+        }
       }
 
-      if (active) await refresh();
+      if (active) {
+        await refresh();
+      }
     }
 
     void initialize();
@@ -102,7 +190,10 @@ export default function App() {
     };
   }, [refresh]);
 
-  const navigate = (nextPage) => setPage(nextPage);
+  const navigate = (nextPage) => {
+    setPage(nextPage);
+    setSidebarOpen(false);
+  };
 
   const handleAuthChange = (name, value) => {
     setAuthForm((previous) => ({
@@ -113,6 +204,7 @@ export default function App() {
 
   const handleAuth = async (event) => {
     event.preventDefault();
+
     setAuthBusy(true);
     setAuthError("");
 
@@ -127,9 +219,12 @@ export default function App() {
 
       setUser(response.user || response);
       setPage("dashboard");
+
       await refresh();
     } catch (error) {
-      setAuthError(error.message || "Authentication failed.");
+      setAuthError(
+        error.message || "Authentication failed."
+      );
     } finally {
       setAuthBusy(false);
     }
@@ -166,7 +261,9 @@ export default function App() {
           ? await buyAsset(payload)
           : await sellAsset(payload);
 
-      window.dispatchEvent(new Event("portfolio:refresh"));
+      window.dispatchEvent(
+        new Event("portfolio:refresh")
+      );
 
       await refresh();
 
@@ -180,7 +277,9 @@ export default function App() {
           `${side === "buy" ? "Bought" : "Sold"} ${asset.symbol} successfully.`
       );
     } catch (error) {
-      const { default: Swal } = await import("sweetalert2");
+      const { default: Swal } = await import(
+        "sweetalert2"
+      );
 
       Swal.fire({
         icon: "error",
@@ -192,6 +291,7 @@ export default function App() {
     }
   };
 
+  // Authentication page
   if (page === "auth") {
     return (
       <AuthPage
@@ -210,6 +310,7 @@ export default function App() {
     );
   }
 
+  // Initial loading screen
   if (loading) {
     return (
       <div className="app-loading">
@@ -220,52 +321,176 @@ export default function App() {
     );
   }
 
+  const navigationItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      Icon: LayoutDashboard,
+    },
+    {
+      id: "markets",
+      label: "Markets",
+      Icon: CandlestickChart,
+    },
+    {
+      id: "leaderboard",
+      label: "Leaderboard",
+      Icon: Trophy,
+    },
+    {
+      id: "history",
+      label: "Trade History",
+      Icon: History,
+    },
+  ];
+
   return (
     <div className="app-shell">
-      <Navbar
-        balance={balance}
-        user={user}
-        onNavigate={navigate}
-        onLogin={() => {
-          setAuthMode("login");
-          setPage("auth");
-        }}
-        onLogout={handleLogout}
-      />
 
-      <main className="main-content">
-        {page === "dashboard" && (
-          <>
-            <Dashboard
-              balance={balance}
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="mobile-overlay"
+          aria-label="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`sidebar ${
+          sidebarOpen ? "sidebar-open" : ""
+        }`}
+      >
+        <div className="brand">
+          <div className="brand-mark">₹</div>
+
+          <div>
+            <strong>SATTA BAZAR</strong>
+            <span>THE CHAOS EXCHANGE</span>
+          </div>
+
+          <button
+            type="button"
+            className="close-sidebar"
+            aria-label="Close sidebar"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={19} />
+          </button>
+        </div>
+
+        <p className="sidebar-label">MAIN MENU</p>
+
+        <nav className="side-nav">
+          {navigationItems.map(
+            ({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={`nav-item ${
+                  page === id ? "active" : ""
+                }`}
+                onClick={() => navigate(id)}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </button>
+            )
+          )}
+        </nav>
+
+        <div className="sidebar-spacer" />
+
+        <div className="sidebar-footer">
+          <div className="footer-status">
+            <span className="live-dot" />
+            Market system online
+          </div>
+
+          <p>
+            Virtual trading only. Play responsibly.
+          </p>
+
+          <span className="version-label">
+            SATTA BAZAR
+          </span>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="main-column">
+
+        {/* Mobile menu bar */}
+        <div className="mobile-toolbar">
+          <button
+            type="button"
+            aria-label="Open sidebar"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu size={22} />
+          </button>
+
+          <span>₹ SATTA BAZAR</span>
+        </div>
+
+        <Navbar
+          balance={balance}
+          user={user}
+          onNavigate={navigate}
+          onLogin={() => {
+            setAuthMode("login");
+            setPage("auth");
+          }}
+          onLogout={handleLogout}
+        />
+
+        <main className="main-content">
+          {page === "dashboard" && (
+            <>
+              <Dashboard
+                balance={balance}
+                assets={assets}
+                events={events}
+                marketData={marketData}
+                marketPaused={marketPaused}
+                rank={rank}
+                onTrade={handleTrade}
+              />
+
+              <TradeHistory />
+            </>
+          )}
+
+          {page === "markets" && (
+            <Markets
               assets={assets}
-              events={events}
-              marketData={marketData}
-              marketPaused={marketPaused}
-              rank={rank}
               onTrade={handleTrade}
             />
+          )}
+
+          {page === "leaderboard" && (
+            <Leaderboard
+              rankings={rankings}
+            />
+          )}
+
+          {page === "history" && (
             <TradeHistory />
-          </>
-        )}
+          )}
+        </main>
 
-        {page === "markets" && (
-          <Markets assets={assets} onTrade={handleTrade} />
-        )}
+        {/* Bot intentionally left untouched */}
+        <NuksaanNawab />
 
-        {page === "leaderboard" && (
-          <Leaderboard rankings={rankings} />
-        )}
-
-        {page === "history" && <TradeHistory />}
-      </main>
-
-      <NuksaanNawab />
-
-      <footer className="app-footer">
-        <span>SATTA BAZAR</span>
-        <span>Virtual trading only · Play responsibly</span>
-      </footer>
+        <footer className="app-footer">
+          <span>SATTA BAZAR</span>
+          <span>
+            Virtual trading only · Play responsibly
+          </span>
+        </footer>
+      </div>
     </div>
   );
 }
