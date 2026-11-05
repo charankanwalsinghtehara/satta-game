@@ -484,12 +484,7 @@ export default function App() {
         {/* Bot intentionally left untouched */}
         <NuksaanNawab />
 
-        <footer className="app-footer">
-          <span>SATTA BAZAR</span>
-          <span>
-            Virtual trading only · Play responsibly
-          </span>
-        </footer>
+       
       </div>
     </div>
   );
