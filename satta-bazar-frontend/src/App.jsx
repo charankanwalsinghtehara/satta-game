@@ -1,299 +1,118 @@
 
-import { useEffect, useState } from "react";
-import {
-  Activity,
-  ArrowLeftRight,
-  LayoutDashboard,
-  Trophy,
-  Zap,
-  Menu,
-  X,
-  Coffee,
-  TrendingUp,
-} from "lucide-react";
-
+import { useCallback, useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
+import NuksaanNawab from "./components/NuksaanNawab";
 import Dashboard from "./pages/Dashboard";
 import Markets from "./pages/Markets";
 import Leaderboard from "./pages/Leaderboard";
-import NuksaanNawab from "./components/NuksaanNawab";
-
+import AuthPage from "./pages/AuthPage";
+import TradeHistory from "./pages/TradeHistory";
 import {
-  ApiError,
-  buyAsset,
-  getLeaderboard,
-  getMarketMovers,
   getMarketOverview,
-  getAssetHistory,
+  getLeaderboard,
   getMe,
   getWallet,
   login,
-  logout,
   register,
+  logout,
+  buyAsset,
   sellAsset,
 } from "../services/api";
-
 import "./App.css";
-import { showTradePopup } from "./components/TradePopup";
-
-const assetStyles = {
-  food: { emoji: "☕", color: "#c98b57" },
-  tech: { emoji: "🌀", color: "#38bdf8" },
-  family: { emoji: "🕵️", color: "#4ade80" },
-  transport: { emoji: "🛺", color: "#fb7185" },
-  entertainment: { emoji: "🎭", color: "#a78bfa" },
-  life: { emoji: "✨", color: "#fbbf24" },
-};
-
-const navigation = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    id: "markets",
-    label: "Markets",
-    icon: TrendingUp,
-  },
-  {
-    id: "leaderboard",
-    label: "Leaderboard",
-    icon: Trophy,
-  },
-];
 
 export default function App() {
   const [page, setPage] = useState("dashboard");
+  const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(0);
   const [assets, setAssets] = useState([]);
+  const [marketData, setMarketData] = useState([]);
+  const [rankings, setRankings] = useState([]);
   const [events, setEvents] = useState([]);
   const [marketPaused, setMarketPaused] = useState(false);
-  const [rankings, setRankings] = useState([]);
-  const [marketData, setMarketData] = useState([]);
-  const [user, setUser] = useState(null);
-  const [notice, setNotice] = useState("");
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("");
+  const [rank, setRank] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [authMode, setAuthMode] = useState("login");
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
-
   const [authForm, setAuthForm] = useState({
     username: "",
     email: "",
     password: "",
   });
 
-  async function loadMarket() {
-    const [overview, movers, leaderboard] = await Promise.all([
-      getMarketOverview(),
-      getMarketMovers(),
-      getLeaderboard(),
-    ]);
+  const refresh = useCallback(async () => {
+    try {
+      const [market, wallet, leaderboard] = await Promise.all([
+        getMarketOverview(),
+        getWallet(),
+        getLeaderboard(),
+      ]);
 
-    const changes = new Map(
-      movers.movers.map((mover) => [
-        mover.symbol,
-        Number(mover.change_percent),
-      ]),
-    );
+      const rawAssets = market.assets || market.results || [];
 
-    const assets = overview.assets.map((asset) => ({
-      ...asset,
-      price: Number(asset.current_price),
-      change: changes.get(asset.symbol) || 0,
-      joke: asset.description,
-      ...(assetStyles[asset.category] || assetStyles.life),
-    }));
+      setAssets(
+        rawAssets.map((asset) => ({
+          ...asset,
+          symbol: asset.symbol,
+          price: Number(asset.price || 0),
+          change: Number(asset.change ?? asset.change_percent ?? 0),
+        }))
+      );
 
-    let historyData = [];
+      setMarketData(market.history || market.market_history || []);
+      setMarketPaused(Boolean(market.paused));
+      setBalance(Number(wallet.balance ?? wallet.coins ?? 0));
 
-    if (assets.length) {
-      const chartAsset =
-        assets.find(
-          (asset) => asset.symbol === movers.movers[0]?.symbol,
-        ) || assets[0];
+      const players = Array.isArray(leaderboard)
+        ? leaderboard
+        : leaderboard.results || leaderboard.rankings || [];
 
-      const history = await getAssetHistory(chartAsset.symbol);
-
-      historyData = history.results
-        .slice()
-        .reverse()
-        .map((snapshot) => ({
-          time: new Date(snapshot.created_at).toLocaleTimeString(
-            [],
-            {
-              hour: "2-digit",
-              minute: "2-digit",
-            },
-          ),
-          value: Number(snapshot.price),
-        }));
+      setRankings(players);
+      setEvents(market.events || []);
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setLoading(false);
     }
-
-    return {
-      assets,
-      events: overview.active_events,
-      marketPaused: overview.paused,
-      rankings: leaderboard.rankings,
-      marketData: historyData,
-    };
-  }
-
-  function applyMarketData(data) {
-    setAssets(data.assets);
-    setEvents(data.events);
-    setMarketPaused(data.marketPaused);
-    setRankings(data.rankings);
-    setMarketData(data.marketData);
-  }
-
-  async function refreshMarket() {
-    applyMarketData(await loadMarket());
-  }
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    loadMarket()
-      .then((data) => {
-        if (active) {
-          applyMarketData(data);
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setNotice(
-            `Could not load market data: ${error.message}`,
-          );
-        }
-      });
+    async function initialize() {
+      try {
+        const currentUser = await getMe();
+        if (active && currentUser) setUser(currentUser);
+      } catch {
+        if (active) setUser(null);
+      }
 
-    getMe()
-      .then(async (profile) => {
-        if (!active) return;
+      if (active) await refresh();
+    }
 
-        setUser(profile);
+    void initialize();
 
-        const wallet = await getWallet();
-
-        if (active) {
-          setBalance(Number(wallet.balance));
-        }
-      })
-      .catch((error) => {
-        if (!active && error instanceof ApiError) return;
-
-        if (
-          error instanceof ApiError &&
-          [401, 403].includes(error.status)
-        ) {
-          if (active) {
-            setUser(null);
-            setBalance(0);
-          }
-
-          return;
-        }
-
-        if (active) {
-          setNotice(
-            `Could not load account: ${error.message}`,
-          );
-        }
-      });
+    const timer = window.setInterval(() => {
+      void refresh();
+    }, 10000);
 
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
-  }, []);
+  }, [refresh]);
 
-  async function handleTrade(asset, side) {
-    if (!user) {
-      setAuthMode("login");
-      setAuthError("");
-      setNotice(
-        "Log in to trade with your virtual wallet.",
-      );
-      return;
-    }
+  const navigate = (nextPage) => setPage(nextPage);
 
-    let result;
+  const handleAuthChange = (name, value) => {
+    setAuthForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
 
-    try {
-      const tradeAction =
-        side === "buy" ? buyAsset : sellAsset;
-
-      result = await tradeAction({
-        symbol: asset.symbol,
-        quantity: "1",
-        idempotency_key: crypto.randomUUID(),
-        language: "hinglish",
-      });
-    } catch (error) {
-      setNotice(`Trade failed: ${error.message}`);
-      return;
-    }
-
-    // Update the wallet only after the backend confirms success.
-    if (result?.portfolio?.cash_balance != null) {
-      setBalance(Number(result.portfolio.cash_balance));
-    } else {
-      // Fallback if the trade response doesn't include portfolio data.
-      getWallet()
-        .then((wallet) => {
-          setBalance(Number(wallet.balance));
-        })
-        .catch((error) => {
-          setNotice(
-            `Trade completed, but wallet refresh failed: ${error.message}`,
-          );
-        });
-    }
-
-    // Tell the P&L component to refresh immediately after a trade.
-    window.dispatchEvent(new Event("portfolio:refresh"));
-
-    const realizedPnl = Number(
-      result?.trade?.realized_pnl ?? 0,
-    );
-
-    const tradeOutcome =
-      side === "buy"
-        ? "buy"
-        : realizedPnl > 0
-          ? "profit"
-          : realizedPnl < 0
-            ? "loss"
-            : "neutral";
-
-    // Keep the existing trade popup and its sound behavior unchanged.
-    showTradePopup(
-      side,
-      result.roast ||
-        (side === "buy"
-          ? `🚀 Bought ${asset.name} successfully!`
-          : `💸 Sold ${asset.name} successfully!`),
-      tradeOutcome,
-    );
-
-    // Refresh market data in the background; don't delay the popup.
-    refreshMarket().catch((error) => {
-      setNotice(
-        `Trade completed, but market refresh failed: ${error.message}`,
-      );
-    });
-  }
-
-  function navigate(id) {
-    setPage(id);
-    setMobileOpen(false);
-    setNotice("");
-  }
-
-  async function handleAuthSubmit(event) {
+  const handleAuth = async (event) => {
     event.preventDefault();
-
     setAuthBusy(true);
     setAuthError("");
 
@@ -306,331 +125,147 @@ export default function App() {
               password: authForm.password,
             });
 
-      const profile = response.user || response;
-
-      setUser(profile);
-
-      const wallet =
-        response.wallet || (await getWallet());
-
-      setBalance(Number(wallet.balance));
-      setAuthMode("");
-
-      setAuthForm({
-        username: "",
-        email: "",
-        password: "",
-      });
-
-      setNotice(
-        `Welcome, ${profile.username}! Your virtual wallet is ready.`,
-      );
+      setUser(response.user || response);
+      setPage("dashboard");
+      await refresh();
     } catch (error) {
-      setAuthError(error.message);
+      setAuthError(error.message || "Authentication failed.");
     } finally {
       setAuthBusy(false);
     }
-  }
+  };
 
-  async function handleLogout() {
+  const handleLogout = async () => {
     try {
       await logout();
-
-      setUser(null);
-      setBalance(0);
-      setNotice("You have been logged out.");
     } catch (error) {
-      setNotice(`Could not log out: ${error.message}`);
+      console.error("Logout failed:", error);
     }
+
+    setUser(null);
+    setPage("dashboard");
+  };
+
+  const handleTrade = async (asset, side) => {
+    if (!user) {
+      setAuthMode("login");
+      setPage("auth");
+      return;
+    }
+
+    try {
+      const payload = {
+        symbol: asset.symbol,
+        quantity: 1,
+        idempotency_key:
+          `${asset.symbol}-${side}-${Date.now()}-${Math.random()}`,
+      };
+
+      const result =
+        side === "buy"
+          ? await buyAsset(payload)
+          : await sellAsset(payload);
+
+      window.dispatchEvent(new Event("portfolio:refresh"));
+
+      await refresh();
+
+      const { showTradePopup } = await import(
+        "./components/TradePopup"
+      );
+
+      showTradePopup(
+        side,
+        result.message ||
+          `${side === "buy" ? "Bought" : "Sold"} ${asset.symbol} successfully.`
+      );
+    } catch (error) {
+      const { default: Swal } = await import("sweetalert2");
+
+      Swal.fire({
+        icon: "error",
+        title: "Trade failed",
+        text: error.message || "Please try again.",
+        background: "#18181b",
+        color: "#fff",
+      });
+    }
+  };
+
+  if (page === "auth") {
+    return (
+      <AuthPage
+        mode={authMode}
+        form={authForm}
+        busy={authBusy}
+        error={authError}
+        onChange={handleAuthChange}
+        onSubmit={handleAuth}
+        onModeChange={(mode) => {
+          setAuthMode(mode);
+          setAuthError("");
+        }}
+        onBack={() => setPage("dashboard")}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="loading-mark">₹</div>
+        <h2>Satta Bazar</h2>
+        <p>Loading the chaos...</p>
+      </div>
+    );
   }
 
   return (
     <div className="app-shell">
-      {mobileOpen && (
-        <button
-          className="mobile-overlay"
-          aria-label="Close navigation"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      <Navbar
+        balance={balance}
+        user={user}
+        onNavigate={navigate}
+        onLogin={() => {
+          setAuthMode("login");
+          setPage("auth");
+        }}
+        onLogout={handleLogout}
+      />
 
-      <aside
-        className={`sidebar ${
-          mobileOpen ? "sidebar-open" : ""
-        }`}
-      >
-        <div className="brand">
-          <div className="brand-mark">
-            <Coffee size={23} />
-          </div>
-
-          <div>
-            <strong>SATTA BAZAR</strong>
-            <span>THE CHAOS EXCHANGE</span>
-          </div>
-
-          <button
-            className="icon-button close-sidebar"
-            aria-label="Close menu"
-            onClick={() => setMobileOpen(false)}
-          >
-            <X size={19} />
-          </button>
-        </div>
-
-        <div className="sidebar-label">PLAYGROUND</div>
-
-        <nav className="side-nav">
-          {navigation.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              className={`nav-item ${
-                page === id ? "active" : ""
-              }`}
-              onClick={() => navigate(id)}
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="sidebar-label">GAME MODES</div>
-
-        <button
-          className="nav-item"
-          onClick={() =>
-            setNotice("YOLO mode is coming soon.")
-          }
-        >
-          <Zap size={19} />
-          <span>YOLO Mode</span>
-          <span className="coming-tag">SOON</span>
-        </button>
-
-        <button
-          className="nav-item"
-          onClick={() =>
-            setNotice(
-              "Trade history is available through the Django API.",
-            )
-          }
-        >
-          <ArrowLeftRight size={19} />
-          <span>Trade History</span>
-        </button>
-
-        <div className="sidebar-spacer" />
-
-        <div className="sidebar-footer">
-          <div className="footer-status">
-            <span className="live-dot" />
-            Demo system online
-          </div>
-
-          <p>Zero real money. Maximum bakchodi.</p>
-
-          <span className="version-label">
-            SATTA BAZAR · DEMO V1
-          </span>
-        </div>
-      </aside>
-
-      <div className="main-column">
-        <div className="mobile-toolbar">
-          <button
-            className="icon-button"
-            aria-label="Open navigation"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu size={21} />
-          </button>
-
-          <span>
-            <Coffee size={17} /> SATTA BAZAR
-          </span>
-
-          <Activity size={18} />
-        </div>
-
-        <Navbar
-          balance={balance}
-          user={user}
-          onNavigate={navigate}
-          onLogin={() => {
-            setAuthMode("login");
-            setAuthError("");
-          }}
-          onLogout={handleLogout}
-        />
-
-        <main className="main-content">
-          {notice && (
-            <div className="notice-banner" role="status">
-              <span>{notice}</span>
-
-              <button
-                className="notice-close"
-                onClick={() => setNotice("")}
-                aria-label="Dismiss notification"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
-
-          {authMode && (
-            <form
-              className="panel auth-panel"
-              onSubmit={handleAuthSubmit}
-            >
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">
-                    YOUR VIRTUAL ACCOUNT
-                  </p>
-
-                  <h2>
-                    {authMode === "register"
-                      ? "Create account"
-                      : "Log in"}
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  className="button button-sell"
-                  onClick={() => setAuthMode("")}
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="auth-fields">
-                <label>
-                  Username
-                  <input
-                    autoComplete="username"
-                    required
-                    value={authForm.username}
-                    onChange={(event) =>
-                      setAuthForm({
-                        ...authForm,
-                        username: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-
-                {authMode === "register" && (
-                  <label>
-                    Email
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={authForm.email}
-                      onChange={(event) =>
-                        setAuthForm({
-                          ...authForm,
-                          email: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
-                )}
-
-                <label>
-                  Password
-                  <input
-                    type="password"
-                    autoComplete={
-                      authMode === "register"
-                        ? "new-password"
-                        : "current-password"
-                    }
-                    required
-                    value={authForm.password}
-                    onChange={(event) =>
-                      setAuthForm({
-                        ...authForm,
-                        password: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-              </div>
-
-              {authError && (
-                <p className="auth-error" role="alert">
-                  {authError}
-                </p>
-              )}
-
-              <div className="auth-actions">
-                <button
-                  className="button button-buy"
-                  disabled={authBusy}
-                >
-                  {authBusy
-                    ? "Please wait..."
-                    : authMode === "register"
-                      ? "Create account"
-                      : "Log in"}
-                </button>
-
-                <button
-                  type="button"
-                  className="auth-switch"
-                  onClick={() => {
-                    setAuthMode(
-                      authMode === "register"
-                        ? "login"
-                        : "register",
-                    );
-                    setAuthError("");
-                  }}
-                >
-                  {authMode === "register"
-                    ? "Already have an account? Log in"
-                    : "New here? Create an account"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {page === "dashboard" && (
+      <main className="main-content">
+        {page === "dashboard" && (
+          <>
             <Dashboard
               balance={balance}
               assets={assets}
               events={events}
               marketData={marketData}
               marketPaused={marketPaused}
-              rank={
-                rankings.findIndex(
-                  (entry) =>
-                    entry.username === user?.username,
-                ) + 1
-              }
+              rank={rank}
               onTrade={handleTrade}
             />
-          )}
+            <TradeHistory />
+          </>
+        )}
 
-          {page === "markets" && (
-            <Markets
-              assets={assets}
-              onTrade={handleTrade}
-            />
-          )}
+        {page === "markets" && (
+          <Markets assets={assets} onTrade={handleTrade} />
+        )}
 
-          {page === "leaderboard" && (
-            <Leaderboard rankings={rankings} />
-          )}
-        </main>
-      </div>
+        {page === "leaderboard" && (
+          <Leaderboard rankings={rankings} />
+        )}
 
-      {/* Floating Hinglish meme chatbot */}
+        {page === "history" && <TradeHistory />}
+      </main>
+
       <NuksaanNawab />
+
+      <footer className="app-footer">
+        <span>SATTA BAZAR</span>
+        <span>Virtual trading only · Play responsibly</span>
+      </footer>
     </div>
   );
 }
