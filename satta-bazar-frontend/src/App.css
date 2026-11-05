@@ -2729,6 +2729,66 @@ form.auth-panel .auth-switch:hover {
     font-size: 11px;
   }
 
+/* ================================
+   MARKET CHART
+================================ */
+
+.market-chart-modern {
+  width: 100%;
+  height: 260px;
+  min-height: 220px;
+  margin-top: 18px;
+}
+
+.market-chart-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 125px;
+  padding: 11px 13px;
+  background: #191b2a;
+  border: 1px solid #45405f;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px #0005;
+}
+
+.market-chart-tooltip span {
+  color: #a5a6b8;
+  font-size: 10px;
+}
+
+.market-chart-tooltip strong {
+  color: #e9ddff;
+  font-size: 13px;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  gap: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.chart-empty span {
+  font-size: 30px;
+}
+
+.chart-empty p {
+  margin: 0;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .market-chart-modern {
+    height: 220px;
+  }
+}
+
   .leader-tag {
     font-size: 7px;
   }
