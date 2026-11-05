@@ -1886,3 +1886,386 @@ form.auth-panel .auth-switch:hover {
     gap: 8px;
   }
 }
+/* ================================
+   MODERN NAVBAR
+================================ */
+
+.navbar-modern {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-height: 76px;
+  gap: 24px;
+  background: rgba(20, 21, 34, 0.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(18px);
+}
+
+.navbar-search-area {
+  position: relative;
+  flex: 1;
+  max-width: 540px;
+  min-width: 120px;
+}
+
+.navbar-search {
+  width: 100%;
+  min-height: 43px;
+  padding: 0 13px;
+  background: #10111b;
+  border: 1px solid #303147;
+  border-radius: 11px;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.navbar-search:focus-within,
+.navbar-search.search-focused {
+  border-color: #a78bfa80;
+  box-shadow: 0 0 0 3px #a78bfa12;
+}
+
+.navbar-search input {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 12px;
+}
+
+.navbar-search input::placeholder {
+  color: #77798f;
+}
+
+.navbar-search kbd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  color: #999bb0;
+  background: #252638;
+  border: 1px solid #36384d;
+  border-radius: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.search-clear {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  color: #a5a6b8;
+  background: #292a3d;
+  border: 0;
+  border-radius: 6px;
+}
+
+.search-clear:hover {
+  color: white;
+  background: #3a3b52;
+}
+
+.navbar-search-hint {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  color: var(--muted);
+  background: #1b1c2c;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px #0005;
+  font-size: 11px;
+}
+
+.navbar-search-hint strong {
+  color: var(--text);
+}
+
+.navbar-search-hint button {
+  margin-left: auto;
+  padding: 5px 8px;
+  color: #c4b5fd;
+  background: #a78bfa16;
+  border: 1px solid #a78bfa30;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.navbar-actions {
+  gap: 13px;
+}
+
+.navbar-wallet {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 47px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #29213d, #211d32);
+  border: 1px solid #a78bfa35;
+  border-radius: 11px;
+}
+
+.wallet-icon {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  color: #d8b4fe;
+  background: #a78bfa20;
+  border-radius: 8px;
+}
+
+.wallet-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wallet-copy small {
+  color: #9992b8;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.wallet-copy strong {
+  color: #f3e8ff;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.wallet-currency {
+  align-self: center;
+  padding: 4px 6px;
+  color: #c4b5fd;
+  background: #a78bfa18;
+  border-radius: 5px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.navbar-account {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.navbar-user-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.navbar-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  color: #e9d5ff;
+  background: linear-gradient(135deg, #8b5cf6, #5b3aa5);
+  border: 1px solid #c4b5fd55;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.navbar-user-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.navbar-user-copy strong {
+  max-width: 105px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navbar-user-copy small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.navbar-account-button,
+.navbar-login-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 800;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.navbar-account-button {
+  color: #fda4af;
+  background: #fb718510;
+  border: 1px solid #fb718530;
+}
+
+.navbar-account-button:hover {
+  background: #fb718522;
+  border-color: #fb718570;
+}
+
+.navbar-login-button {
+  color: #e9ddff;
+  background: #a78bfa1c;
+  border: 1px solid #a78bfa55;
+}
+
+.navbar-login-button:hover {
+  background: #a78bfa30;
+  border-color: #a78bfa90;
+}
+
+.navbar-account-button:active,
+.navbar-login-button:active {
+  transform: scale(0.97);
+}
+
+.guest-avatar {
+  color: #c4b5fd;
+  background: #a78bfa18;
+  border: 1px solid #a78bfa35;
+}
+
+/* ================================
+   NAVBAR RESPONSIVE
+================================ */
+
+@media (max-width: 900px) {
+  .navbar-modern {
+    gap: 13px;
+  }
+
+  .navbar-user-copy {
+    display: none;
+  }
+
+  .navbar-account {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .navbar-modern {
+    min-height: 64px;
+    padding: 0 14px;
+    gap: 10px;
+  }
+
+  .navbar-search-area {
+    max-width: none;
+  }
+
+  .navbar-search {
+    min-height: 39px;
+    padding: 0 9px;
+  }
+
+  .navbar-search input {
+    font-size: 11px;
+  }
+
+  .navbar-search kbd {
+    display: none;
+  }
+
+  .navbar-wallet {
+    min-height: 38px;
+    gap: 6px;
+    padding: 4px 7px;
+  }
+
+  .wallet-icon {
+    width: 27px;
+    height: 27px;
+  }
+
+  .wallet-copy small {
+    display: none;
+  }
+
+  .wallet-copy strong {
+    font-size: 11px;
+  }
+
+  .wallet-currency {
+    display: none;
+  }
+
+  .navbar-actions {
+    gap: 7px;
+  }
+
+  .navbar-account {
+    gap: 6px;
+  }
+
+  .navbar-account-button,
+  .navbar-login-button {
+    width: 35px;
+    min-width: 35px;
+    min-height: 35px;
+    padding: 0;
+  }
+
+  .navbar-account-button span,
+  .navbar-login-button span {
+    display: none;
+  }
+
+  .navbar-avatar {
+    width: 31px;
+    height: 31px;
+  }
+
+  .guest-avatar {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .navbar-modern {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .navbar-search input::placeholder {
+    color: transparent;
+  }
+
+  .navbar-wallet {
+    padding: 4px 6px;
+  }
+
+  .wallet-copy strong {
+    font-size: 10px;
+  }
+}
