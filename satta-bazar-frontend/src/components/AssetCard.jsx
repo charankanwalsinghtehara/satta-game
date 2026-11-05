@@ -1,52 +1,88 @@
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  TrendingUp,
+} from "lucide-react";
 
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+const money = (value) =>
+  Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  });
 
 export default function AssetCard({ asset, onTrade }) {
-  const rising = asset.change >= 0;
+  const isUp = Number(asset.change) >= 0;
 
   return (
-    <article className="asset-card">
-      <div className="asset-card-top">
-        <div
-          className="asset-icon"
-          style={{ "--asset-color": asset.color }}
-        >
-          {asset.emoji}
+    <article
+      className={`asset-card chaos-asset ${
+        isUp ? "asset-up" : "asset-down"
+      }`}
+    >
+      <div className="asset-top">
+        <div className="asset-identity">
+          <div
+            className="asset-emoji"
+            style={{
+              "--asset-color": asset.color || "#a78bfa",
+            }}
+          >
+            {asset.emoji || "🪙"}
+          </div>
+
+          <div>
+            <h3>{asset.name}</h3>
+            <span>{asset.symbol}</span>
+          </div>
         </div>
 
-        <span className={`change-chip ${rising ? "up" : "down"}`}>
-          {rising ? (
+        <span className={`asset-change ${isUp ? "up" : "down"}`}>
+          {isUp ? (
             <ArrowUpRight size={14} />
           ) : (
             <ArrowDownRight size={14} />
           )}
-          {Math.abs(asset.change).toFixed(2)}%
+          {Math.abs(Number(asset.change || 0)).toFixed(2)}%
         </span>
       </div>
 
-      <p className="asset-symbol">{asset.symbol}</p>
-      <h3>{asset.name}</h3>
-
       <div className="asset-price">
-        {asset.price.toLocaleString("en-IN")} <small>coins</small>
+        {money(asset.price)}
+        <small> BB</small>
       </div>
 
-      <p className="asset-joke">{asset.joke}</p>
+      <div className="asset-mini-chart">
+        <TrendingUp size={15} />
+        <span>
+          {isUp ? "BULLISH MOMENTUM" : "BEARISH MOMENTUM"}
+        </span>
+        <span className="asset-live-dot" />
+      </div>
+
+      <p className="asset-joke">
+        {asset.joke || asset.description || "Market is cooking..."}
+      </p>
 
       <div className="asset-actions">
         <button
-          className="button button-buy"
+          type="button"
+          className="asset-buy"
+          disabled={!onTrade}
           onClick={() => onTrade(asset, "buy")}
         >
-          Buy
+          BUY <span>↗</span>
         </button>
+
         <button
-          className="button button-sell"
+          type="button"
+          className="asset-sell"
+          disabled={!onTrade}
           onClick={() => onTrade(asset, "sell")}
         >
-          Sell
+          SELL <span>↘</span>
         </button>
       </div>
+
+      <div className="asset-card-glow" />
     </article>
   );
 }
