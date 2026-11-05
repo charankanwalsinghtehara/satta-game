@@ -1512,3 +1512,377 @@ form.auth-panel .auth-switch:hover {
     padding: 23px;
   }
 }
+/* CHAOS EXCHANGE HERO */
+
+.chaos-hero {
+  position: relative;
+  min-height: 290px;
+  padding: 36px;
+  overflow: hidden;
+  border: 1px solid #8b5cf655;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 80% 40%, #8b5cf633, transparent 42%),
+    linear-gradient(115deg, #211832, #111321 75%);
+  box-shadow: 0 20px 65px #00000030;
+}
+
+.chaos-hero-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 620px;
+}
+
+.chaos-hero h1 {
+  margin: 20px 0 12px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(38px, 5vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -3px;
+}
+
+.chaos-hero h1 span {
+  color: #c4b5fd;
+  text-shadow: 0 0 30px #a78bfa70;
+}
+
+.chaos-hero-copy > p:not(.eyebrow) {
+  color: #b7b3ca;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.hero-live-dot,
+.asset-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 12px #4ade80;
+  animation: chaos-pulse 1.5s infinite;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 23px;
+}
+
+.hero-tags span {
+  padding: 8px 11px;
+  color: #ddd6fe;
+  background: #a78bfa18;
+  border: 1px solid #a78bfa35;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+}
+
+.hero-orbit {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  right: 8%;
+  top: 15px;
+  display: grid;
+  place-items: center;
+}
+
+.orbit-ring {
+  position: absolute;
+  inset: 15px;
+  border: 1px solid #a78bfa40;
+  border-radius: 50%;
+}
+
+.orbit-ring-one {
+  animation: orbit-spin 18s linear infinite;
+}
+
+.orbit-ring-two {
+  inset: 40px;
+  border-style: dashed;
+  border-color: #22d3ee55;
+  animation: orbit-spin 12s linear infinite reverse;
+}
+
+.orbit-core {
+  width: 90px;
+  height: 90px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  border: 1px solid #c4b5fd88;
+  border-radius: 50%;
+  background: radial-gradient(circle, #7c3aed55, #171329);
+  box-shadow: 0 0 35px #8b5cf677;
+  color: #fff;
+  font-size: 35px;
+  font-weight: 900;
+}
+
+.orbit-core small {
+  font-size: 10px;
+  color: #c4b5fd;
+}
+
+.orbit-token {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #a78bfa55;
+  border-radius: 12px;
+  background: #242039;
+  color: #c4b5fd;
+  font-size: 18px;
+  box-shadow: 0 0 20px #8b5cf644;
+}
+
+.token-one {
+  top: 5px;
+  right: 50px;
+}
+
+.token-two {
+  bottom: 15px;
+  left: 20px;
+}
+
+.token-three {
+  top: 90px;
+  right: 0;
+}
+
+.hero-bottom-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 13px 25px;
+  background: #ffffff08;
+  border-top: 1px solid #ffffff12;
+  font-size: 9px;
+}
+
+.hero-bottom-line span {
+  color: #9293aa;
+  letter-spacing: 1px;
+}
+
+.hero-bottom-line strong {
+  color: #86efac;
+  margin-right: auto;
+}
+
+/* CRAZY ASSET CARDS */
+
+.chaos-asset {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.chaos-asset:hover {
+  transform: translateY(-6px);
+  border-color: #a78bfa88;
+  box-shadow: 0 15px 35px #8b5cf622;
+}
+
+.asset-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.asset-emoji {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--asset-color) 18%, #171825);
+  border: 1px solid var(--asset-color);
+  font-size: 23px;
+}
+
+.asset-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.asset-change.up {
+  color: #86efac;
+  background: #4ade8018;
+}
+
+.asset-change.down {
+  color: #fda4af;
+  background: #fb718518;
+}
+
+.asset-price {
+  margin: 22px 0 12px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset-price small {
+  color: #9293aa;
+  font-size: 11px;
+}
+
+.asset-mini-chart {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a78bfa;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+}
+
+.asset-joke {
+  min-height: 35px;
+  margin: 14px 0;
+  color: #9293aa;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.asset-actions {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.asset-actions button {
+  min-height: 39px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 900;
+  transition: 180ms ease;
+}
+
+.asset-buy {
+  color: #052e16;
+  background: #4ade80;
+  border: 1px solid #4ade80;
+}
+
+.asset-buy:hover {
+  background: #86efac;
+  box-shadow: 0 0 20px #4ade8055;
+}
+
+.asset-sell {
+  color: #ffe4e6;
+  background: #fb71851b;
+  border: 1px solid #fb718555;
+}
+
+.asset-sell:hover {
+  background: #fb71852e;
+  box-shadow: 0 0 20px #fb718533;
+}
+
+.asset-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.asset-card-glow {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  right: -70px;
+  top: -70px;
+  z-index: -1;
+  border-radius: 50%;
+  background: #a78bfa;
+  filter: blur(65px);
+  opacity: 0.2;
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chaos-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (max-width: 700px) {
+  .chaos-hero {
+    min-height: 310px;
+    padding: 24px 20px 65px;
+  }
+
+  .chaos-hero h1 {
+    font-size: 39px;
+  }
+
+  .hero-orbit {
+    width: 125px;
+    height: 125px;
+    right: -8px;
+    top: 65px;
+    opacity: 0.5;
+  }
+
+  .orbit-core {
+    width: 55px;
+    height: 55px;
+    font-size: 23px;
+  }
+
+  .orbit-ring-two {
+    inset: 25px;
+  }
+
+  .orbit-ring-one {
+    inset: 8px;
+  }
+
+  .orbit-token {
+    width: 25px;
+    height: 25px;
+    font-size: 12px;
+  }
+
+  .hero-tags {
+    max-width: 250px;
+  }
+
+  .hero-bottom-line {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+}
