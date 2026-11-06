@@ -12,19 +12,20 @@
   align-items: center;
   justify-content: center;
   padding: 13px 18px;
-  border: 1px solid #f0abfc;
+  border: 1px solid #75b5e8;
   border-radius: 999px;
-  background: #d8b4fe;
-  color: #251238;
+  background: #5b9bd5;
+  color: #071525;
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 8px 30px #0005;
-  transition: transform 0.2s ease;
+  box-shadow: 0 8px 30px #0006;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .nawab-launcher:hover {
   transform: translateY(-2px);
+  background: #78b5e8;
 }
 
 .nawab-window {
@@ -34,11 +35,11 @@
   height: min(520px, calc(100dvh - 100px));
   margin-bottom: 12px;
   overflow: hidden;
-  color: #f8f5ff;
-  background: #171421;
-  border: 1px solid #49345e;
+  color: #e8edf5;
+  background: #141e2e;
+  border: 1px solid #2d4058;
   border-radius: 18px;
-  box-shadow: 0 20px 65px #0008;
+  box-shadow: 0 20px 65px #0009;
 }
 
 .nawab-header {
@@ -46,8 +47,8 @@
   align-items: center;
   gap: 8px;
   padding: 13px;
-  background: #251b32;
-  border-bottom: 1px solid #49345e;
+  background: #1a293c;
+  border-bottom: 1px solid #2d4058;
 }
 
 .nawab-avatar {
@@ -57,7 +58,7 @@
   height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #d8b4fe20;
+  background: #5b9bd520;
   font-size: 23px;
 }
 
@@ -72,12 +73,13 @@
 }
 
 .nawab-heading strong {
+  color: #edf3fb;
   font-size: 14px;
 }
 
 .nawab-heading span {
   margin-top: 4px;
-  color: #e9b8ff;
+  color: #6fcfb0;
   font-size: 10px;
 }
 
@@ -89,10 +91,11 @@
   flex-shrink: 0;
   border: 0;
   border-radius: 7px;
-  color: #f8f5ff;
+  color: #dce6f2;
   background: transparent;
   cursor: pointer;
   font-size: 17px;
+  transition: background 0.2s ease;
 }
 
 .nawab-header button:hover {
@@ -101,8 +104,9 @@
 
 .nawab-disclaimer {
   padding: 8px;
-  color: #e9b8ff;
-  background: #d8b4fe0d;
+  color: #78cdb5;
+  background: #34c99a0d;
+  border-bottom: 1px solid #263449;
   font-size: 10px;
   text-align: center;
 }
@@ -114,6 +118,8 @@
   gap: 10px;
   padding: 13px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #40546d transparent;
 }
 
 .nawab-message {
@@ -128,15 +134,17 @@
 
 .nawab-message.bot {
   align-self: flex-start;
-  color: #eee6f7;
-  background: #30253d;
+  color: #e0e8f2;
+  background: #26364b;
+  border: 1px solid #34465e;
   border-bottom-left-radius: 4px;
 }
 
 .nawab-message.user {
   align-self: flex-end;
-  color: #251238;
-  background: #d8b4fe;
+  color: #071b19;
+  background: #34c99a;
+  border: 1px solid #55d8ae;
   border-bottom-right-radius: 4px;
 }
 
@@ -149,40 +157,49 @@
 
 .nawab-suggestions button {
   padding: 7px 9px;
-  color: #e9c8ff;
-  background: #d8b4fe12;
-  border: 1px solid #d8b4fe40;
+  color: #a9cbed;
+  background: #5b9bd510;
+  border: 1px solid #5b9bd550;
   border-radius: 999px;
   font-size: 10px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .nawab-suggestions button:hover {
-  background: #d8b4fe25;
+  color: #dceeff;
+  background: #5b9bd525;
+  border-color: #75b5e8;
 }
 
 .nawab-form {
   display: flex;
   gap: 8px;
   padding: 11px;
-  background: #251b32;
-  border-top: 1px solid #49345e;
+  background: #1a293c;
+  border-top: 1px solid #2d4058;
 }
 
 .nawab-form input {
   flex: 1;
   min-width: 0;
   padding: 11px;
-  color: #f8f5ff;
-  background: #110e18;
-  border: 1px solid #49345e;
+  color: #e8edf5;
+  background: #0c1522;
+  border: 1px solid #34465e;
   border-radius: 9px;
   outline: none;
   font-size: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nawab-form input::placeholder {
+  color: #8998ad;
 }
 
 .nawab-form input:focus {
-  border-color: #d8b4fe;
+  border-color: #5b9bd5;
+  box-shadow: 0 0 0 3px #5b9bd520;
 }
 
 .nawab-form button {
@@ -190,14 +207,16 @@
   flex-shrink: 0;
   border: 0;
   border-radius: 9px;
-  color: #251238;
-  background: #d8b4fe;
+  color: #071525;
+  background: #5b9bd5;
   font-size: 19px;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .nawab-form button:hover {
-  background: #e9d5ff;
+  background: #78b5e8;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 480px) {
