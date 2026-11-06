@@ -1,3 +1,6 @@
+
+/* Portfolio P&L main card */
+
 .portfolio-pnl {
   padding: 22px;
   min-width: 0;
@@ -6,16 +9,16 @@
   background:
     radial-gradient(
       ellipse at 100% 0%,
-      #6236a52b,
+      #5b9bd51c,
       transparent 38%
     ),
     linear-gradient(
       135deg,
-      #1c1b30 0%,
-      #151725 62%,
-      #171b2b 100%
+      #17263a 0%,
+      #131e2e 62%,
+      #152235 100%
     );
-  border-color: #8b5cf64d;
+  border-color: #344c68;
   box-shadow:
     0 18px 55px #00000024,
     inset 0 1px #ffffff08;
@@ -27,9 +30,9 @@
   inset: 0 auto 0 0;
   width: 3px;
   background: linear-gradient(
-    #c4b5fd,
-    #8b5cf6,
-    #22d3ee
+    #83b9e6,
+    #397fb8,
+    #34c99a
   );
 }
 
@@ -53,16 +56,18 @@
 }
 
 .portfolio-pnl-heading h2 svg {
-  color: #a78bfa;
-  filter: drop-shadow(0 0 8px #a78bfa99);
+  color: #83b9e6;
+  filter: drop-shadow(0 0 8px #5b9bd555);
 }
 
 .portfolio-pnl-subtitle {
   margin: 0;
-  color: #9293aa;
+  color: #93a4ba;
   font-size: 11px;
   line-height: 1.6;
 }
+
+/* Heading actions */
 
 .pnl-heading-actions {
   display: flex;
@@ -74,7 +79,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #a7f3d0;
+  color: #75dfbd;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -85,10 +90,10 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #4ade80;
+  background: #34c99a;
   box-shadow:
-    0 0 0 4px #4ade801c,
-    0 0 13px #4ade80;
+    0 0 0 4px #34c99a1c,
+    0 0 13px #34c99a;
   animation: pnl-pulse 1.5s infinite;
 }
 
@@ -99,9 +104,9 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 9px 12px;
-  color: #e4e4e7;
-  background: #202132;
-  border: 1px solid #37384c;
+  color: #d7e2ef;
+  background: #1b2a3e;
+  border: 1px solid #344c68;
   border-radius: 9px;
   font-size: 11px;
   font-weight: 700;
@@ -110,9 +115,9 @@
 }
 
 .portfolio-refresh:hover {
-  background: #30264a;
-  border-color: #a78bfa;
-  box-shadow: 0 0 18px #8b5cf633;
+  background: #223a53;
+  border-color: #5b9bd5;
+  box-shadow: 0 0 18px #5b9bd522;
 }
 
 .portfolio-refresh:disabled {
@@ -137,13 +142,13 @@
   overflow: hidden;
   margin: 0 0 14px;
   padding: 19px 20px 15px;
-  border: 1px solid #a78bfa36;
+  border: 1px solid #5b9bd544;
   border-radius: 13px;
   background: linear-gradient(
     105deg,
-    #282044 0%,
-    #1c1c30 52%,
-    #171d2b 100%
+    #1d3852 0%,
+    #192a40 52%,
+    #172438 100%
   );
   transition:
     border-color 0.3s,
@@ -157,20 +162,20 @@
   height: 210px;
   right: 5%;
   top: -145px;
-  border: 1px solid #c4b5fd20;
+  border: 1px solid #83b9e620;
   border-radius: 50%;
   box-shadow:
-    0 0 0 18px #c4b5fd08,
-    0 0 0 38px #c4b5fd06;
+    0 0 0 18px #83b9e608,
+    0 0 0 38px #83b9e606;
   pointer-events: none;
 }
 
 .pnl-live-banner.is-up {
-  border-color: #4ade8045;
+  border-color: #34c99a45;
 }
 
 .pnl-live-banner.is-down {
-  border-color: #fb718545;
+  border-color: #f0717845;
 }
 
 .pnl-live-label,
@@ -184,20 +189,20 @@
 }
 
 .pnl-live-label span {
-  color: #b5a9df;
+  color: #a9c8e5;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 1.5px;
 }
 
 .pnl-live-label b {
-  color: #86efac;
+  color: #75dfbd;
   font-size: 9px;
   letter-spacing: 1px;
 }
 
 .pnl-live-banner.is-down .pnl-live-label b {
-  color: #fda4af;
+  color: #f49ba1;
 }
 
 .pnl-live-value {
@@ -207,35 +212,35 @@
   font-size: clamp(28px, 3vw, 40px);
   letter-spacing: -1.5px;
   font-variant-numeric: tabular-nums;
-  color: #86efac;
-  text-shadow: 0 0 24px #4ade8026;
+  color: #34c99a;
+  text-shadow: 0 0 24px #34c99a26;
   position: relative;
   z-index: 1;
   transition: color 0.3s;
 }
 
 .pnl-live-banner.is-down .pnl-live-value {
-  color: #fda4af;
-  text-shadow: 0 0 24px #fb718526;
+  color: #f07178;
+  text-shadow: 0 0 24px #f0717826;
 }
 
 .pnl-live-value small {
   font: 600 12px "DM Sans", sans-serif;
-  color: #aaa5c3;
+  color: #a1b1c5;
   letter-spacing: 0;
 }
 
 .pnl-live-bottom {
-  color: #9996b3;
+  color: #93a4ba;
   font-size: 10px;
 }
 
 .pnl-positive {
-  color: #4ade80 !important;
+  color: #34c99a !important;
 }
 
 .pnl-negative {
-  color: #fb7185 !important;
+  color: #f07178 !important;
 }
 
 .pnl-live-track {
@@ -252,8 +257,8 @@
   border-radius: 9px;
   background: linear-gradient(
     90deg,
-    #8b5cf6,
-    #4ade80
+    #397fb8,
+    #34c99a
   );
   transition: width 0.45s ease;
 }
@@ -261,8 +266,8 @@
 .pnl-live-banner.is-down .pnl-live-track span {
   background: linear-gradient(
     90deg,
-    #a78bfa,
-    #fb7185
+    #5b9bd5,
+    #f07178
   );
 }
 
@@ -279,10 +284,10 @@
   padding: 15px;
   background: linear-gradient(
     145deg,
-    #1b1c2d,
-    #151725
+    #19283c,
+    #141f30
   );
-  border: 1px solid #39344f;
+  border: 1px solid #30445d;
   border-radius: 12px;
   transition:
     transform 0.2s,
@@ -292,7 +297,7 @@
 
 .portfolio-pnl-stat:hover {
   transform: translateY(-2px);
-  border-color: #8b5cf677;
+  border-color: #5b9bd577;
   box-shadow: 0 8px 25px #00000020;
 }
 
@@ -304,7 +309,7 @@
 }
 
 .portfolio-pnl-stat > span {
-  color: #a1a1b5;
+  color: #a1b1c5;
   font-size: 11px;
 }
 
@@ -316,7 +321,7 @@
 }
 
 .portfolio-pnl-stat > small {
-  color: #77798f;
+  color: #8292a8;
   font-size: 10px;
 }
 
@@ -336,7 +341,7 @@
 }
 
 .portfolio-position-heading > span {
-  color: #9293aa;
+  color: #93a4ba;
   font-size: 11px;
 }
 
@@ -354,8 +359,8 @@
   align-items: center;
   gap: 14px;
   padding: 14px;
-  background: #141521;
-  border: 1px solid #292a3c;
+  background: #141f30;
+  border: 1px solid #293d55;
   border-radius: 10px;
   transition:
     border-color 0.2s,
@@ -363,8 +368,8 @@
 }
 
 .portfolio-position-row:hover {
-  background: #1c1b2e;
-  border-color: #8b5cf655;
+  background: #1a2a40;
+  border-color: #5b9bd555;
 }
 
 .portfolio-position-name,
@@ -389,13 +394,13 @@
 
 .portfolio-position-name span {
   margin-top: 5px;
-  color: #9293aa;
+  color: #93a4ba;
   font-size: 10px;
 }
 
 .portfolio-position-cell span {
   margin-bottom: 6px;
-  color: #9293aa;
+  color: #93a4ba;
   font-size: 10px;
 }
 
@@ -414,7 +419,7 @@
   align-items: flex-start;
   gap: 8px;
   margin: 17px 0 0;
-  color: #8b8da3;
+  color: #8998ad;
   font-size: 10px;
   line-height: 1.7;
 }
@@ -424,9 +429,9 @@
 .portfolio-pnl-error {
   margin-bottom: 15px;
   padding: 11px 12px;
-  color: #fda4af;
-  background: #fb71851a;
-  border: 1px solid #fb71853d;
+  color: #f49ba1;
+  background: #f0717815;
+  border: 1px solid #f0717840;
   border-radius: 9px;
   font-size: 12px;
 }
@@ -435,17 +440,22 @@
   margin-left: 10px;
   padding: 5px 10px;
   color: #fff;
-  background: #7c3aed;
-  border: 0;
+  background: #397fb8;
+  border: 1px solid #5599d0;
   border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.portfolio-pnl-error button:hover {
+  background: #4b91c9;
 }
 
 .portfolio-pnl-loading,
 .portfolio-pnl-empty,
 .portfolio-pnl-muted {
   padding: 14px 0;
-  color: #9293aa;
+  color: #93a4ba;
   font-size: 12px;
   line-height: 1.7;
 }
@@ -462,8 +472,8 @@
   50% {
     opacity: 0.45;
     box-shadow:
-      0 0 0 7px #4ade800c,
-      0 0 5px #4ade80;
+      0 0 0 7px #34c99a0c,
+      0 0 5px #34c99a;
   }
 }
 
