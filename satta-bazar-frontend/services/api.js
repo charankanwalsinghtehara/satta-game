@@ -197,3 +197,12 @@ export function getAssetHistory(symbol) {
     `/assets/${encodeURIComponent(symbol)}/history/`,
   );
 }
+
+// Nuksaan Nawab AI chatbot
+// Django route: /api/v1/nuksaan-nawab/chat/
+export function sendNuksaanNawabMessage(message, history = []) {
+  return csrfRequest("/nuksaan-nawab/chat/", {
+    message,
+    history,
+  });
+}
