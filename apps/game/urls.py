@@ -1,3 +1,4 @@
+
 from django.urls import path
 
 from . import views
@@ -6,6 +7,11 @@ app_name = "game"
 
 urlpatterns = [
     path("auth/csrf/", views.csrf_cookie, name="csrf"),
+    path(
+        "chat/nuksaan-nawab/",
+        views.nuksaan_nawab_chat,
+        name="nuksaan-nawab-chat",
+    ),
     path("auth/register/", views.register, name="register"),
     path("auth/login/", views.session_login, name="login"),
     path("auth/logout/", views.session_logout, name="logout"),
