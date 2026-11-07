@@ -51,4 +51,9 @@ urlpatterns = [
     path("rewards/daily-claim/", views.reward_daily, name="daily-claim"),
     path("leaderboards/", views.leaderboard, name="leaderboards"),
     path("users/<str:username>/", views.public_profile, name="public-profile"),
+    path(
+    "nuksaan-nawab/chat/",
+    views.nuksaan_nawab_chat,
+    name="nuksaan-nawab-chat",
+),
 ]
