@@ -1,3 +1,4 @@
+
 Django==5.2.7
 python-dotenv==1.1.1
 djangorestframework==3.16.1
@@ -10,3 +11,4 @@ psycopg[binary]
 whitenoise>=6.6
 django-cors-headers>=4.7,<5
 gunicorn
+requests>=2.32.0
