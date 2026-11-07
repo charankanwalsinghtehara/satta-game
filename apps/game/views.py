@@ -1,5 +1,9 @@
 from datetime import timedelta
 from decimal import Decimal
+import logging
+import os
+
+import requests
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
@@ -1145,3 +1149,98 @@ class _PortfolioSnapshotSerializer(serializers.Serializer):
     )
 
     created_at = serializers.DateTimeField()
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def nuksaan_nawab_chat(request):
+    """Proxy chat requests to the separately hosted Nuksaan Nawab LLM."""
+    csrf_response = _csrf_failure(request)
+    if csrf_response is not None:
+        return csrf_response
+
+    message = request.data.get("message", "")
+    if not isinstance(message, str) or not message.strip():
+        return Response(
+            {"detail": "Message is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    message = message.strip()
+    if len(message) > 300:
+        return Response(
+            {"detail": "Message must be 300 characters or less."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    api_url = os.environ.get("LLM_API_URL", "").strip().rstrip("/")
+    api_key = os.environ.get("LLM_API_KEY", "").strip()
+    if not api_url or not api_key:
+        return Response(
+            {"detail": "Nuksaan Nawab AI service is not configured."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    history = request.data.get("history", [])
+    if not isinstance(history, list):
+        history = []
+
+    clean_history = []
+    for item in history[-12:]:
+        if not isinstance(item, dict):
+            continue
+        role = item.get("role")
+        content = item.get("content")
+        if role not in ("user", "assistant"):
+            continue
+        if not isinstance(content, str) or not content.strip():
+            continue
+        clean_history.append({
+            "role": role,
+            "content": content.strip()[:2000],
+        })
+
+    try:
+        response = requests.post(
+            f"{api_url}/chat",
+            json={"message": message, "history": clean_history},
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            timeout=(10, 120),
+        )
+        response.raise_for_status()
+        data = response.json()
+        reply = data.get("reply") if isinstance(data, dict) else None
+        if not isinstance(reply, str) or not reply.strip():
+            return Response(
+                {"detail": "AI service returned an invalid response."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response({"reply": reply.strip()})
+
+    except requests.exceptions.Timeout:
+        logging.getLogger(__name__).exception(
+            "Nuksaan Nawab AI request timed out."
+        )
+        return Response(
+            {"detail": "AI response timed out. Please try again."},
+            status=status.HTTP_504_GATEWAY_TIMEOUT,
+        )
+    except requests.exceptions.RequestException:
+        logging.getLogger(__name__).exception(
+            "Nuksaan Nawab AI request failed."
+        )
+        return Response(
+            {"detail": "AI service is temporarily unavailable."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except ValueError:
+        logging.getLogger(__name__).exception(
+            "Invalid JSON returned by Nuksaan Nawab AI."
+        )
+        return Response(
+            {"detail": "AI service returned an invalid response."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
