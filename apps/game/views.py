@@ -38,6 +38,8 @@ from .models import (
     UserAchievement,
     UserMission,
     Wallet,
+    AuctionLot,
+    AuctionBid,
 )
 from .serializers import (
     AchievementSerializer,
@@ -55,6 +57,8 @@ from .serializers import (
     TradeSerializer,
     UserAchievementSerializer,
     active_missions,
+    place_auction_bid,
+    transition_auction_lots,
 )
 from .services import (
     calculate_portfolio,
@@ -1244,3 +1248,139 @@ def nuksaan_nawab_chat(request):
             {"detail": "AI service returned an invalid response."},
             status=status.HTTP_502_BAD_GATEWAY,
         )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def auction_lots(request):
+    transition_auction_lots()
+
+    query = AuctionLot.objects.all().prefetch_related("bids")
+
+    auction_status = request.query_params.get("status")
+
+    if auction_status:
+        if auction_status not in AuctionLot.Status.values:
+            return Response(
+                {"detail": "Invalid auction status."},
+                status=400,
+            )
+
+        query = query.filter(status=auction_status)
+
+    return _page(
+        request,
+        query,
+        AuctionLotSerializer,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def auction_lot_detail(request, lot_id):
+    transition_auction_lots()
+
+    lot = get_object_or_404(
+        AuctionLot.objects.prefetch_related("bids"),
+        pk=lot_id,
+    )
+
+    return Response(
+        AuctionLotSerializer(lot).data
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def auction_lot_bids(request, lot_id):
+    transition_auction_lots()
+
+    lot = get_object_or_404(
+        AuctionLot,
+        pk=lot_id,
+    )
+
+    bids = (
+        AuctionBid.objects.filter(lot=lot)
+        .select_related("bidder")
+        .order_by("-created_at")
+    )
+
+    return _page(
+        request,
+        bids,
+        AuctionBidSerializer,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def auction_place_bid(request, lot_id):
+    serializer = AuctionBidRequestSerializer(
+        data=request.data
+    )
+
+    serializer.is_valid(raise_exception=True)
+
+    bid_data = serializer.validated_data
+
+    was_replay = AuctionBid.objects.filter(
+        bidder=request.user,
+        idempotency_key=bid_data["idempotency_key"],
+    ).exists()
+
+    try:
+        bid = place_auction_bid(
+            user=request.user,
+            lot_id=lot_id,
+            amount=bid_data["amount"],
+            idempotency_key=bid_data["idempotency_key"],
+        )
+
+    except DjangoValidationError as exc:
+        return _service_error(exc)
+
+    request.user.wallet.refresh_from_db(
+        fields=["balance"]
+    )
+
+    bid.lot.refresh_from_db()
+
+    return Response(
+        {
+            "success": True,
+            "message": (
+                "Your bid is leading! 🎉"
+                if bid.lot.highest_bidder_id == request.user.pk
+                else "Bid submitted."
+            ),
+            "bid": AuctionBidSerializer(bid).data,
+            "auction": AuctionLotSerializer(
+                bid.lot
+            ).data,
+            "wallet_balance": request.user.wallet.balance,
+        },
+        status=(
+            status.HTTP_200_OK
+            if was_replay
+            else status.HTTP_201_CREATED
+        ),
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_auction_bids(request):
+    query = (
+        AuctionBid.objects.filter(
+            bidder=request.user
+        )
+        .select_related("lot")
+        .order_by("-created_at")
+    )
+
+    return _page(
+        request,
+        query,
+        AuctionBidSerializer,
+    )
