@@ -16,6 +16,8 @@ from .models import (
     Trade,
     UserAchievement,
     UserMission,
+    AuctionLot,
+    AuctionBid,
 )
 
 User = get_user_model()
@@ -224,3 +226,79 @@ class MissionSerializer(serializers.ModelSerializer):
 def active_missions():
     now = timezone.now()
     return Mission.objects.filter(is_active=True, active_from__lte=now, active_until__gt=now)
+
+
+class AuctionLotSerializer(serializers.ModelSerializer):
+    highest_bidder = serializers.CharField(
+        source="highest_bidder.username",
+        read_only=True,
+        allow_null=True,
+    )
+
+    winner = serializers.CharField(
+        source="winner.username",
+        read_only=True,
+        allow_null=True,
+    )
+
+    bid_count = serializers.IntegerField(
+        source="bids.count",
+        read_only=True,
+    )
+
+    minimum_next_bid = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuctionLot
+        fields = [
+            "id",
+            "item_code",
+            "name",
+            "description",
+            "category",
+            "emoji",
+            "starting_price",
+            "current_bid",
+            "minimum_increment",
+            "minimum_next_bid",
+            "highest_bidder",
+            "winner",
+            "bid_count",
+            "starts_at",
+            "ends_at",
+            "status",
+        ]
+
+    def get_minimum_next_bid(self, obj):
+        if obj.current_bid <= 0:
+            return obj.starting_price
+
+        return obj.current_bid + obj.minimum_increment
+
+
+class AuctionBidSerializer(serializers.ModelSerializer):
+    bidder = serializers.CharField(
+        source="bidder.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = AuctionBid
+        fields = [
+            "id",
+            "bidder",
+            "amount",
+            "created_at",
+        ]
+
+
+class AuctionBidRequestSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+    )
+
+    idempotency_key = serializers.CharField(
+        max_length=100,
+    )
