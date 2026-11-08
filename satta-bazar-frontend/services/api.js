@@ -206,3 +206,31 @@ export function sendNuksaanNawabMessage(message, history = []) {
     history,
   });
 }
+
+// =====================================================
+// INDIAN AUCTION ARENA API
+// =====================================================
+
+export function getAuctionLots(status = "") {
+  const query = status
+    ? `?status=${encodeURIComponent(status)}`
+    : "";
+
+  return request(`/auction/lots/${query}`);
+}
+
+export function getAuctionLot(lotId) {
+  return request(`/auction/lots/${lotId}/`);
+}
+
+export function getAuctionBids(lotId) {
+  return request(`/auction/lots/${lotId}/bids/`);
+}
+
+export function placeAuctionBid(lotId, bid) {
+  return csrfRequest(`/auction/lots/${lotId}/bid/`, bid);
+}
+
+export function getMyAuctionBids() {
+  return request("/auction/my-bids/");
+}
