@@ -27,6 +27,8 @@ from .models import (
     UserMission,
     Wallet,
     WalletAdjustment,
+    AuctionLot,
+    AuctionBid,
 )
 
 CENT = Decimal("0.01")
@@ -688,3 +690,298 @@ def apply_event(template, round_instance=None, at=None):
         round=round_instance,
     )
     return occurrence
+
+
+
+@transaction.atomic
+def place_auction_bid(user, lot_id, amount, idempotency_key):
+    from .models import AuctionLot, AuctionBid
+
+    if not isinstance(idempotency_key, str) or not idempotency_key.strip():
+        raise ValidationError("A valid idempotency key is required.")
+
+    if len(idempotency_key) > 100:
+        raise ValidationError("Idempotency key is too long.")
+
+    try:
+        amount = Decimal(str(amount))
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValidationError("Enter a valid bid amount.")
+
+    if not amount.is_finite() or amount <= 0:
+        raise ValidationError("Bid must be greater than zero.")
+
+    if amount != amount.quantize(CENT):
+        raise ValidationError("Bids can have at most two decimal places.")
+
+    
+    lot = AuctionLot.objects.select_for_update().filter(
+        pk=lot_id
+    ).first()
+
+    if lot is None:
+        raise ValidationError("Auction item not found.")
+
+    previous_request = AuctionBid.objects.filter(
+        bidder=user,
+        idempotency_key=idempotency_key,
+    ).first()
+
+    if previous_request:
+        if (
+            previous_request.lot_id != lot.pk
+            or previous_request.amount != amount
+        ):
+            raise ValidationError(
+                "This request key was already used for another bid."
+            )
+
+        return previous_request
+
+    now = timezone.now()
+
+    if lot.status == AuctionLot.Status.UPCOMING:
+        if lot.starts_at > now:
+            raise ValidationError("This auction has not started yet.")
+
+        lot.status = AuctionLot.Status.LIVE
+        lot.save(update_fields=["status"])
+
+    if lot.status != AuctionLot.Status.LIVE:
+        raise ValidationError("This auction is no longer live.")
+
+    if lot.ends_at <= now:
+        lot.status = (
+            AuctionLot.Status.SOLD
+            if lot.highest_bidder_id
+            else AuctionLot.Status.UNSOLD
+        )
+        lot.winner_id = lot.highest_bidder_id
+        lot.save(update_fields=["status", "winner"])
+
+        raise ValidationError("This auction has ended.")
+
+    minimum_bid = (
+        lot.starting_price
+        if lot.current_bid <= 0
+        else lot.current_bid + lot.minimum_increment
+    )
+
+    if amount < minimum_bid:
+        raise ValidationError(
+            f"Minimum acceptable bid is {minimum_bid} BB."
+        )
+
+    previous_bidder_id = lot.highest_bidder_id
+
+    
+    user_ids = {user.pk}
+
+    if previous_bidder_id:
+        user_ids.add(previous_bidder_id)
+
+    settings_row = MarketSettings.current()
+
+    for user_id in sorted(user_ids, key=str):
+        Wallet.objects.get_or_create(
+            user_id=user_id,
+            defaults={"balance": settings_row.starting_balance},
+        )
+
+    
+    wallets = {
+        str(wallet.user_id): wallet
+        for wallet in Wallet.objects.select_for_update()
+        .filter(user_id__in=user_ids)
+        .order_by("user_id")
+    }
+
+    bidder_wallet = wallets[str(user.pk)]
+
+    
+    previous_request = AuctionBid.objects.filter(
+        bidder=user,
+        idempotency_key=idempotency_key,
+    ).first()
+
+    if previous_request:
+        if (
+            previous_request.lot_id != lot.pk
+            or previous_request.amount != amount
+        ):
+            raise ValidationError(
+                "This request key was already used for another bid."
+            )
+
+        return previous_request
+
+    
+    if previous_bidder_id == user.pk:
+        debit_amount = money(amount - lot.current_bid)
+    else:
+        debit_amount = amount
+
+    if debit_amount <= 0:
+        raise ValidationError("Your new bid must increase the current bid.")
+
+    # Create bid inside the same transaction.
+    bid = AuctionBid.objects.create(
+        lot=lot,
+        bidder=user,
+        amount=amount,
+        idempotency_key=idempotency_key,
+    )
+
+    # Deduct from the new leading bidder.
+    _write_ledger(
+        bidder_wallet,
+        LedgerEntry.Kind.AUCTION_BID,
+        -debit_amount,
+        f"Auction bid: {lot.name}",
+        f"auction-bid:{bid.pk}",
+    )
+
+    # Refund the previous leader if someone else takes the lead.
+    if previous_bidder_id and previous_bidder_id != user.pk:
+        previous_wallet = wallets[str(previous_bidder_id)]
+
+        _write_ledger(
+            previous_wallet,
+            LedgerEntry.Kind.AUCTION_REFUND,
+            lot.current_bid,
+            f"Outbid refund: {lot.name}",
+            f"auction-refund:{bid.pk}",
+        )
+
+    lot.current_bid = amount
+    lot.highest_bidder = user
+
+    lot.save(
+        update_fields=[
+            "current_bid",
+            "highest_bidder",
+        ]
+    )
+
+    payload = {
+        "type": "auction.bid",
+        "lot_id": lot.pk,
+        "lot_name": lot.name,
+        "bidder": user.username,
+        "amount": str(amount),
+        "minimum_next_bid": str(
+            money(amount + lot.minimum_increment)
+        ),
+    }
+
+    transaction.on_commit(
+        lambda: _publish(
+            f"satta_auction_{lot.pk}",
+            payload,
+        )
+    )
+
+    return bid
+
+
+@transaction.atomic
+def close_auction_lot(lot_id):
+    from .models import AuctionLot
+
+    lot = AuctionLot.objects.select_for_update().filter(
+        pk=lot_id
+    ).first()
+
+    if lot is None:
+        raise ValidationError("Auction item not found.")
+
+    if lot.status not in [
+        AuctionLot.Status.LIVE,
+        AuctionLot.Status.UPCOMING,
+    ]:
+        return lot
+
+    if lot.ends_at > timezone.now():
+        raise ValidationError("Auction closing time has not arrived.")
+
+    if lot.starts_at > timezone.now():
+        raise ValidationError("Auction has not started.")
+
+    if lot.highest_bidder_id:
+        lot.status = AuctionLot.Status.SOLD
+        lot.winner_id = lot.highest_bidder_id
+    else:
+        lot.status = AuctionLot.Status.UNSOLD
+        lot.winner = None
+
+    lot.save(
+        update_fields=[
+            "status",
+            "winner",
+        ]
+    )
+
+    payload = {
+        "type": "auction.closed",
+        "lot_id": lot.pk,
+        "status": lot.status,
+        "winner": (
+            lot.winner.username
+            if lot.winner else None
+        ),
+        "final_price": str(lot.current_bid),
+    }
+
+    transaction.on_commit(
+        lambda: _publish(
+            f"satta_auction_{lot.pk}",
+            payload,
+        )
+    )
+
+    return lot
+
+
+@transaction.atomic
+def transition_auction_lots():
+    from .models import AuctionLot
+
+    now = timezone.now()
+
+    
+    upcoming = list(
+        AuctionLot.objects.select_for_update().filter(
+            status=AuctionLot.Status.UPCOMING,
+            starts_at__lte=now,
+        )
+    )
+
+    for lot in upcoming:
+        lot.status = AuctionLot.Status.LIVE
+        lot.save(update_fields=["status"])
+
+        transaction.on_commit(
+            lambda lot_id=lot.pk: _publish(
+                f"satta_auction_{lot_id}",
+                {
+                    "type": "auction.started",
+                    "lot_id": lot_id,
+                },
+            )
+        )
+
+   
+    expired_ids = list(
+        AuctionLot.objects.filter(
+            status=AuctionLot.Status.LIVE,
+            ends_at__lte=now,
+        ).values_list("pk", flat=True)
+    )
+
+    for lot_id in expired_ids:
+        close_auction_lot(lot_id)
+
+    return {
+        "activated": len(upcoming),
+        "closed": len(expired_ids),
+    }
