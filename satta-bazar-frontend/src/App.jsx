@@ -19,6 +19,7 @@ import Leaderboard from "./pages/Leaderboard";
 import AuthPage from "./pages/AuthPage";
 import TradeHistory from "./pages/TradeHistory";
 import AuctionArena from "./pages/AuctionArena";
+import { unlockTradeAudio } from "./utils/tradeSounds";
 
 import {
   getMarketOverview,
@@ -278,6 +279,8 @@ export default function App() {
       setPage("auth");
       return;
     }
+    
+void unlockTradeAudio();
 
     try {
       const payload = {
