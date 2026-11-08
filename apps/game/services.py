@@ -985,3 +985,123 @@ def transition_auction_lots():
         "activated": len(upcoming),
         "closed": len(expired_ids),
     }
+def process_auction_bots():
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    now = timezone.now()
+
+    # Only process currently live auctions.
+    live_lots = list(
+        AuctionLot.objects.filter(
+            status=AuctionLot.Status.LIVE,
+            starts_at__lte=now,
+            ends_at__gt=now + timedelta(seconds=3),
+        ).order_by("ends_at")[:10]
+    )
+
+    if not live_lots:
+        return 0
+
+    # Create five bot accounts if they do not already exist.
+    bots = list(
+        User.objects.filter(
+            username__startswith="auction_bot_"
+        ).order_by("username")[:5]
+    )
+
+    existing_names = {bot.username for bot in bots}
+
+    for number in range(1, 6):
+        username = f"auction_bot_{number:02d}"
+
+        if username not in existing_names:
+            bot = User.objects.filter(username=username).first()
+
+            if bot is None:
+                bot = User.objects.create_user(
+                    username=username,
+                    password=None,
+                )
+
+            bots.append(bot)
+            existing_names.add(username)
+
+    bots = bots[:5]
+
+    if not bots:
+        return 0
+
+    bids_placed = 0
+
+    for lot in live_lots:
+        latest_bid = (
+            AuctionBid.objects.filter(lot=lot)
+            .select_related("bidder")
+            .order_by("-created_at")
+            .first()
+        )
+
+        # Avoid bots bidding repeatedly on every frontend poll.
+        if latest_bid:
+            if latest_bid.created_at > now - timedelta(seconds=18):
+                continue
+        elif lot.starts_at > now - timedelta(seconds=8):
+            continue
+
+        # Random chance makes bot bidding feel less mechanical.
+        if random.random() > 0.40:
+            continue
+
+        # Do not let the current leader bid against themselves.
+        available_bots = [
+            bot for bot in bots
+            if bot.pk != lot.highest_bidder_id
+        ]
+
+        if not available_bots:
+            continue
+
+        bot = random.choice(available_bots)
+
+        minimum_bid = (
+            lot.starting_price
+            if lot.current_bid <= 0
+            else lot.current_bid + lot.minimum_increment
+        )
+
+        # Bots sometimes bid slightly above the minimum.
+        extra_steps = random.randint(0, 2)
+        bid_amount = money(
+            minimum_bid + (lot.minimum_increment * extra_steps)
+        )
+
+        # Check available bot balance before attempting the bid.
+        bot_wallet = Wallet.objects.filter(user=bot).first()
+
+        available_balance = (
+            bot_wallet.balance
+            if bot_wallet
+            else MarketSettings.current().starting_balance
+        )
+
+        if available_balance < bid_amount:
+            continue
+
+        try:
+            place_auction_bid(
+                user=bot,
+                lot_id=lot.pk,
+                amount=bid_amount,
+                idempotency_key=(
+                    f"auction-bot:{lot.pk}:{bot.pk}:"
+                    f"{random.getrandbits(64)}"
+                ),
+            )
+            bids_placed += 1
+
+        except ValidationError:
+            # The auction may have ended or another bid may have won the race.
+            continue
+
+    return bids_placed
