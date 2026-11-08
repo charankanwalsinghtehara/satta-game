@@ -241,10 +241,10 @@ class AuctionLotSerializer(serializers.ModelSerializer):
         allow_null=True,
     )
 
-    bid_count = serializers.IntegerField(
-        source="bids.count",
-        read_only=True,
-    )
+    bid_count = serializers.SerializerMethodField()
+
+def get_bid_count(self, obj):
+    return obj.bids.count()
 
     minimum_next_bid = serializers.SerializerMethodField()
 
