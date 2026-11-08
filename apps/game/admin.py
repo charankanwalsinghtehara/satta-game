@@ -20,6 +20,8 @@ from .models import (
     UserMission,
     Wallet,
     WalletAdjustment,
+    AuctionLot,
+    AuctionBid,
 )
 
 
@@ -129,3 +131,52 @@ admin.site.register(
 class MarketEventAdmin(ReadOnlyGameAdmin):
     list_display = ("template", "round", "starts_at", "ends_at")
     list_filter = ("starts_at", "ends_at")
+
+
+@admin.register(AuctionLot)
+class AuctionLotAdmin(admin.ModelAdmin):
+    list_display = (
+        "emoji",
+        "name",
+        "category",
+        "starting_price",
+        "current_bid",
+        "highest_bidder",
+        "status",
+        "starts_at",
+        "ends_at",
+    )
+
+    list_filter = ("status", "category")
+    search_fields = ("name", "item_code")
+
+    readonly_fields = (
+        "current_bid",
+        "highest_bidder",
+        "winner",
+        "created_at",
+    )
+
+
+@admin.register(AuctionBid)
+class AuctionBidAdmin(admin.ModelAdmin):
+    list_display = (
+        "lot",
+        "bidder",
+        "amount",
+        "created_at",
+    )
+
+    list_filter = ("created_at",)
+    search_fields = ("lot__name", "bidder__username")
+
+    readonly_fields = [
+        field.name
+        for field in AuctionBid._meta.fields
+    ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
