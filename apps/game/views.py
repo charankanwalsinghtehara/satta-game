@@ -60,6 +60,8 @@ from .serializers import (
     AuctionLotSerializer,
     AuctionBidSerializer,
     AuctionBidRequestSerializer,
+    process_auction_bots,
+
 )
 
 from .services import (
@@ -1257,9 +1259,17 @@ def nuksaan_nawab_chat(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auction_lots(request):
+    # Activate upcoming auctions and close expired auctions.
     transition_auction_lots()
 
-    query = AuctionLot.objects.all().prefetch_related("bids")
+    # Let bots respond to eligible human bids.
+    process_auction_bots()
+
+    query = (
+        AuctionLot.objects.all()
+        .select_related("highest_bidder", "winner")
+        .prefetch_related("bids")
+    )
 
     auction_status = request.query_params.get("status")
 
@@ -1277,8 +1287,6 @@ def auction_lots(request):
         query,
         AuctionLotSerializer,
     )
-
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auction_lot_detail(request, lot_id):
