@@ -68,15 +68,18 @@ function classifyOutcome(type, message = "") {
   const text = String(message).toLowerCase();
 
   const lossPattern =
-    /\b(loss|losing|lost|nuksaan|nuksan|ghata|negative|red|down)\b|loss mein|ghate mein/;
+    /\b(loss|losing|lost|nuksaan|nuksan|ghata|negative|red|down)\b/;
 
   const profitPattern =
-    /\b(profit|profitable|gain|gained|earned|kamaya|munafa|positive|green)\b|profit mein|faayde mein/;
+    /\b(profit|profitable|gain|gained|earned|kamaya|munafa|positive|green)\b/;
 
   if (lossPattern.test(text)) return "loss";
   if (profitPattern.test(text)) return "profit";
 
-  return type === "buy" ? "buy" : "neutral";
+  if (type === "buy") return "buy";
+  if (type === "sell") return "sell";
+
+  return "neutral";
 }
 
 function getReaction(type, message) {
