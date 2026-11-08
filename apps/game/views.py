@@ -57,15 +57,19 @@ from .serializers import (
     TradeSerializer,
     UserAchievementSerializer,
     active_missions,
-    place_auction_bid,
-    transition_auction_lots,
+    AuctionLotSerializer,
+    AuctionBidSerializer,
+    AuctionBidRequestSerializer,
 )
+
 from .services import (
     calculate_portfolio,
     claim_daily_reward,
     execute_trade,
     money,
     reconcile_wallet,
+    place_auction_bid,
+    transition_auction_lots,
 )
 
 User = get_user_model()
