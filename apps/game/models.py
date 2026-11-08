@@ -489,3 +489,129 @@ class HumourLine(models.Model):
                 fields=["category", "language", "text"], name="unique_humour_line"
             )
         ]
+
+# ==========================================
+# SATTA BAZAR - INDIAN AUCTION ARENA
+# ==========================================
+
+class AuctionLot(models.Model):
+    class Status(models.TextChoices):
+        UPCOMING = "upcoming", "Upcoming"
+        LIVE = "live", "Live"
+        SOLD = "sold", "Sold"
+        UNSOLD = "unsold", "Unsold"
+
+    item_code = models.SlugField(max_length=60, unique=True)
+    name = models.CharField(max_length=120)
+    description = models.TextField()
+    category = models.CharField(max_length=60, default="Entertainment")
+    emoji = models.CharField(max_length=12, default="🎭")
+
+    starting_price = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("1"))],
+    )
+
+    current_bid = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+    )
+
+    minimum_increment = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=50,
+        validators=[MinValueValidator(Decimal("1"))],
+    )
+
+    highest_bidder = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leading_auctions",
+    )
+
+    winner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="auction_wins",
+    )
+
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField()
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.UPCOMING,
+        db_index=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["starts_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(starting_price__gt=0),
+                name="auction_start_price_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(current_bid__gte=0),
+                name="auction_current_bid_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(minimum_increment__gt=0),
+                name="auction_increment_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(ends_at__gt=models.F("starts_at")),
+                name="auction_end_after_start",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.emoji} {self.name}"
+
+
+class AuctionBid(models.Model):
+    lot = models.ForeignKey(
+        AuctionLot,
+        on_delete=models.PROTECT,
+        related_name="bids",
+    )
+
+    bidder = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="auction_bids",
+    )
+
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("1"))],
+    )
+
+    idempotency_key = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name="auction_bid_amount_positive",
+            ),
+            models.UniqueConstraint(
+                fields=["bidder", "idempotency_key"],
+                name="unique_auction_bid_request",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.bidder} bid {self.amount} on {self.lot}"
