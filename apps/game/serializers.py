@@ -1,4 +1,3 @@
-
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model, password_validation
@@ -337,61 +336,21 @@ class AuctionBidSerializer(serializers.ModelSerializer):
 
 
 class AuctionBidRequestSerializer(serializers.Serializer):
+    """
+    Validates the incoming bid payload.
+
+    Auction status, minimum bid, end time, wallet balance,
+    and duplicate request checks are handled by the bidding service.
+    """
+
     amount = serializers.DecimalField(
         max_digits=14,
         decimal_places=2,
         min_value=Decimal("0.01"),
     )
 
-    idempotency_key = serializers.CharField(max_length=100)
-
-    def validate(self, attrs):
-        request = self.context.get("request")
-        lot = self.context.get("lot")
-
-        if lot is None:
-            raise serializers.ValidationError("Auction lot is required.")
-
-        if lot.status != "active":
-            raise serializers.ValidationError("This auction is not active.")
-
-        now = timezone.now()
-        if lot.starts_at and now < lot.starts_at:
-            raise serializers.ValidationError("This auction has not started.")
-
-        if lot.ends_at and now >= lot.ends_at:
-            raise serializers.ValidationError("This auction has ended.")
-
-        minimum = (
-            lot.starting_price
-            if lot.current_bid <= 0
-            else lot.current_bid + lot.minimum_increment
-        )
-
-        if attrs["amount"] < minimum:
-            raise serializers.ValidationError({
-                "amount": f"Your bid must be at least {minimum}."
-            })
-
-        if request and request.user.is_authenticated:
-            if lot.highest_bidder_id == request.user.id:
-                raise serializers.ValidationError(
-                    "You already hold the highest bid."
-                )
-
-        return attrs
-
-
-def place_auction_bid(*args, **kwargs):
-    """
-    Compatibility placeholder.
-
-    The correct auction bidding operation must use the actual
-    transaction and wallet logic from views.py/services.py.
-
-    This function deliberately raises an error rather than silently
-    accepting bids without updating the auction and wallet safely.
-    """
-    raise NotImplementedError(
-        "Connect place_auction_bid to the project's auction bidding service."
+    idempotency_key = serializers.CharField(
+        max_length=100,
+        min_length=1,
+        trim_whitespace=True,
     )
