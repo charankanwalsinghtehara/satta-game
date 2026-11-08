@@ -150,6 +150,8 @@ class LedgerEntry(models.Model):
         DAILY_REWARD = "daily_reward", "Daily reward"
         MISSION_REWARD = "mission_reward", "Mission reward"
         ADMIN_ADJUSTMENT = "admin_adjustment", "Admin adjustment"
+        AUCTION_BID = "auction_bid", "Auction bid"
+        AUCTION_REFUND = "auction_refund", "Auction refund"
 
     wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="ledger")
     kind = models.CharField(max_length=30, choices=Kind.choices)
