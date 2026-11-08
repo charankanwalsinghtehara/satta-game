@@ -1,3 +1,4 @@
+
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model, password_validation
@@ -68,7 +69,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "username", "date_joined"]
 
     def validate_email(self, value):
-        exists = User.objects.filter(email__iexact=value).exclude(pk=self.instance.pk).exists()
+        exists = (
+            User.objects.filter(email__iexact=value)
+            .exclude(pk=self.instance.pk)
+            .exists()
+        )
         if exists:
             raise serializers.ValidationError("This email is already registered.")
         return value.lower()
@@ -117,7 +122,14 @@ class PriceSnapshotSerializer(serializers.ModelSerializer):
 class LedgerSerializer(serializers.ModelSerializer):
     class Meta:
         model = LedgerEntry
-        fields = ["id", "kind", "delta", "balance_after", "reason", "created_at"]
+        fields = [
+            "id",
+            "kind",
+            "delta",
+            "balance_after",
+            "reason",
+            "created_at",
+        ]
 
 
 class TradeSerializer(serializers.ModelSerializer):
@@ -141,7 +153,9 @@ class TradeSerializer(serializers.ModelSerializer):
 class TradeRequestSerializer(serializers.Serializer):
     symbol = serializers.RegexField(r"^[A-Za-z0-9]{2,12}$", max_length=12)
     quantity = serializers.DecimalField(
-        max_digits=14, decimal_places=4, min_value=Decimal("0.0001")
+        max_digits=14,
+        decimal_places=4,
+        min_value=Decimal("0.0001"),
     )
     idempotency_key = serializers.CharField(max_length=100)
     language = serializers.ChoiceField(
@@ -157,13 +171,27 @@ class EventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MarketEvent
-        fields = ["id", "name", "commentary", "effects", "starts_at", "ends_at", "round"]
+        fields = [
+            "id",
+            "name",
+            "commentary",
+            "effects",
+            "starts_at",
+            "ends_at",
+            "round",
+        ]
 
 
 class GameModeSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameMode
-        fields = ["slug", "name", "duration_seconds", "description", "is_active"]
+        fields = [
+            "slug",
+            "name",
+            "duration_seconds",
+            "description",
+            "is_active",
+        ]
 
 
 class RoundSerializer(serializers.ModelSerializer):
@@ -171,7 +199,14 @@ class RoundSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameRound
-        fields = ["id", "mode", "status", "starts_at", "ends_at", "summary"]
+        fields = [
+            "id",
+            "mode",
+            "status",
+            "starts_at",
+            "ends_at",
+            "summary",
+        ]
 
 
 class AchievementSerializer(serializers.ModelSerializer):
@@ -207,8 +242,14 @@ class MissionSerializer(serializers.ModelSerializer):
         ]
 
     def _assignment(self, obj):
-        user = self.context.get("request").user
-        return UserMission.objects.filter(user=user, mission=obj).first()
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return None
+
+        return UserMission.objects.filter(
+            user=request.user,
+            mission=obj,
+        ).first()
 
     def get_progress(self, obj):
         assignment = self._assignment(obj)
@@ -225,7 +266,11 @@ class MissionSerializer(serializers.ModelSerializer):
 
 def active_missions():
     now = timezone.now()
-    return Mission.objects.filter(is_active=True, active_from__lte=now, active_until__gt=now)
+    return Mission.objects.filter(
+        is_active=True,
+        active_from__lte=now,
+        active_until__gt=now,
+    )
 
 
 class AuctionLotSerializer(serializers.ModelSerializer):
@@ -242,10 +287,6 @@ class AuctionLotSerializer(serializers.ModelSerializer):
     )
 
     bid_count = serializers.SerializerMethodField()
-
-def get_bid_count(self, obj):
-    return obj.bids.count()
-
     minimum_next_bid = serializers.SerializerMethodField()
 
     class Meta:
@@ -268,6 +309,9 @@ def get_bid_count(self, obj):
             "ends_at",
             "status",
         ]
+
+    def get_bid_count(self, obj):
+        return obj.bids.count()
 
     def get_minimum_next_bid(self, obj):
         if obj.current_bid <= 0:
@@ -299,6 +343,55 @@ class AuctionBidRequestSerializer(serializers.Serializer):
         min_value=Decimal("0.01"),
     )
 
-    idempotency_key = serializers.CharField(
-        max_length=100,
+    idempotency_key = serializers.CharField(max_length=100)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        lot = self.context.get("lot")
+
+        if lot is None:
+            raise serializers.ValidationError("Auction lot is required.")
+
+        if lot.status != "active":
+            raise serializers.ValidationError("This auction is not active.")
+
+        now = timezone.now()
+        if lot.starts_at and now < lot.starts_at:
+            raise serializers.ValidationError("This auction has not started.")
+
+        if lot.ends_at and now >= lot.ends_at:
+            raise serializers.ValidationError("This auction has ended.")
+
+        minimum = (
+            lot.starting_price
+            if lot.current_bid <= 0
+            else lot.current_bid + lot.minimum_increment
+        )
+
+        if attrs["amount"] < minimum:
+            raise serializers.ValidationError({
+                "amount": f"Your bid must be at least {minimum}."
+            })
+
+        if request and request.user.is_authenticated:
+            if lot.highest_bidder_id == request.user.id:
+                raise serializers.ValidationError(
+                    "You already hold the highest bid."
+                )
+
+        return attrs
+
+
+def place_auction_bid(*args, **kwargs):
+    """
+    Compatibility placeholder.
+
+    The correct auction bidding operation must use the actual
+    transaction and wallet logic from views.py/services.py.
+
+    This function deliberately raises an error rather than silently
+    accepting bids without updating the auction and wallet safely.
+    """
+    raise NotImplementedError(
+        "Connect place_auction_bid to the project's auction bidding service."
     )
