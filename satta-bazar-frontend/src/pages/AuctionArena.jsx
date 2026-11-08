@@ -21,7 +21,7 @@ import {
   placeAuctionBid,
 } from "../../services/api";
 
-
+import "./AuctionArena.css";
 
 const AUDIENCE = [
   { name: "Sharma Ji", avatar: "👨🏻", lines: [
