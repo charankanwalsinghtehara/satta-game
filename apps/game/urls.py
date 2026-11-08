@@ -56,4 +56,34 @@ urlpatterns = [
     views.nuksaan_nawab_chat,
     name="nuksaan-nawab-chat",
 ),
+    # Indian Auction Arena
+path(
+    "auction/lots/",
+    views.auction_lots,
+    name="auction-lots",
+),
+
+path(
+    "auction/lots/<int:lot_id>/",
+    views.auction_lot_detail,
+    name="auction-lot-detail",
+),
+
+path(
+    "auction/lots/<int:lot_id>/bids/",
+    views.auction_lot_bids,
+    name="auction-lot-bids",
+),
+
+path(
+    "auction/lots/<int:lot_id>/bid/",
+    views.auction_place_bid,
+    name="auction-place-bid",
+),
+
+path(
+    "auction/my-bids/",
+    views.my_auction_bids,
+    name="my-auction-bids",
+),
 ]
