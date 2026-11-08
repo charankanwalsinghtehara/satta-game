@@ -60,8 +60,6 @@ from .serializers import (
     AuctionLotSerializer,
     AuctionBidSerializer,
     AuctionBidRequestSerializer,
-    process_auction_bots,
-
 )
 
 from .services import (
@@ -72,6 +70,7 @@ from .services import (
     reconcile_wallet,
     place_auction_bid,
     transition_auction_lots,
+    process_auction_bots,
 )
 
 User = get_user_model()
@@ -87,9 +86,9 @@ def health(request):
     try:
         connection.ensure_connection()
     except DatabaseError:
-        import logging
-
-        logging.getLogger(__name__).exception("Database health check failed")
+        logging.getLogger(__name__).exception(
+            "Database health check failed"
+        )
         return Response(
             {"status": "unhealthy", "database": "unavailable"},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -145,8 +144,6 @@ def _csrf_failure(request):
 @permission_classes([AllowAny])
 @ensure_csrf_cookie
 def csrf_cookie(request):
-    # Set the CSRF cookie and return the token in JSON.
-    # The React frontend can send this token in the X-CSRFToken header.
     token = get_token(request._request)
 
     return Response(
@@ -1256,13 +1253,17 @@ def nuksaan_nawab_chat(request):
         )
 
 
+# ============================================================
+# AUCTION ARENA
+# ============================================================
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auction_lots(request):
     # Activate upcoming auctions and close expired auctions.
     transition_auction_lots()
 
-    # Let bots respond to eligible human bids.
+    # Run automated counter-bidders.
     process_auction_bots()
 
     query = (
@@ -1287,13 +1288,18 @@ def auction_lots(request):
         query,
         AuctionLotSerializer,
     )
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def auction_lot_detail(request, lot_id):
     transition_auction_lots()
 
     lot = get_object_or_404(
-        AuctionLot.objects.prefetch_related("bids"),
+        AuctionLot.objects.select_related(
+            "highest_bidder",
+            "winner",
+        ),
         pk=lot_id,
     )
 
