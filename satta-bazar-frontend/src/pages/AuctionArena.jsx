@@ -23,32 +23,56 @@ import {
 
 import "./AuctionArena.css";
 
+// --------------------------------------------------
+// AUCTION CROWD
+// --------------------------------------------------
+
 const AUDIENCE = [
-  { name: "Sharma Ji", avatar: "👨🏻", lines: [
-    "Beta, itne mein toh poori dukaan aa jaati!",
-    "Pehle ghar ka budget toh sambhaal le!",
-    "Wah beta, paisa udaane ka talent hai!",
-  ]},
-  { name: "Punjabi Uncle", avatar: "🧔🏽", lines: [
-    "O paaji, chak de phatte! 💪",
-    "Eh bid hai ya gareebi da invitation?",
-    "Kinne paise ne tere kol, puttar?",
-  ]},
-  { name: "Chai Wala", avatar: "🫖", lines: [
-    "Chai peelo, decision thanda ho jayega!",
-    "Itna paisa chai mein laga dete!",
-    "Ek cutting chai aur ek lakh ki bid!",
-  ]},
-  { name: "Meme Lord", avatar: "🗿", lines: [
-    "Bro thinks he's Ambani 💀",
-    "Financial advisor left the chat.",
-    "Risk management entered the room and left.",
-  ]},
-  { name: "Bunty", avatar: "😎", lines: [
-    "Bhai main hota toh double laga deta!",
-    "Kya auction hai, kya personality hai!",
-    "Mummy ko mat batana bas!",
-  ]},
+  {
+    name: "Sharma Ji",
+    avatar: "👨🏻",
+    lines: [
+      "Beta, itne mein toh poori dukaan aa jaati!",
+      "Pehle ghar ka budget toh sambhaal le!",
+      "Wah beta, paisa udaane ka talent hai!",
+    ],
+  },
+  {
+    name: "Punjabi Uncle",
+    avatar: "🧔🏽",
+    lines: [
+      "O paaji, chak de phatte! 💪",
+      "Eh bid hai ya gareebi da invitation?",
+      "Kinne paise ne tere kol, puttar?",
+    ],
+  },
+  {
+    name: "Chai Wala",
+    avatar: "🫖",
+    lines: [
+      "Chai peelo, decision thanda ho jayega!",
+      "Itna paisa chai mein laga dete!",
+      "Ek cutting chai aur ek lakh ki bid!",
+    ],
+  },
+  {
+    name: "Meme Lord",
+    avatar: "🗿",
+    lines: [
+      "Bro thinks he's Ambani 💀",
+      "Financial advisor left the chat.",
+      "Risk management entered the room and left.",
+    ],
+  },
+  {
+    name: "Bunty",
+    avatar: "😎",
+    lines: [
+      "Bhai main hota toh double laga deta!",
+      "Kya auction hai, kya personality hai!",
+      "Mummy ko mat batana bas!",
+    ],
+  },
 ];
 
 const AUCTIONEER_LINES = [
@@ -59,12 +83,44 @@ const AUCTIONEER_LINES = [
   "Yeh auction hai ya family WhatsApp group ka drama?",
   "Bhai sahab ne toh market mein aag laga di!",
   "Paisa bolta hai, aur aaj toh cheekh raha hai!",
+  "Kya baat hai! Bazar mein aaj paisa hi paisa hai!",
+  "Sharma Ji bhi chup ho gaye! 😭",
 ];
+
+// --------------------------------------------------
+// HELPERS
+// --------------------------------------------------
 
 const money = (value) =>
   Number(value || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 2,
   });
+
+function getList(data) {
+  if (Array.isArray(data)) return data;
+  return data?.results || data?.items || [];
+}
+
+function formatTime(seconds) {
+  const safe = Math.max(0, seconds);
+  const minutes = Math.floor(safe / 60);
+  const remaining = safe % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(
+    remaining
+  ).padStart(2, "0")}`;
+}
+
+function getMinimumBid(lot) {
+  if (!lot) return 0;
+
+  const currentBid = Number(lot.current_bid || 0);
+  const increment = Number(lot.minimum_increment || 0);
+
+  return currentBid > 0
+    ? currentBid + increment
+    : Number(lot.starting_price || 0);
+}
 
 function playAuctionSound(type, enabled) {
   if (!enabled) return;
@@ -84,34 +140,50 @@ function playAuctionSound(type, enabled) {
 
     if (type === "bid") {
       oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(620, context.currentTime);
+      oscillator.frequency.setValueAtTime(
+        620,
+        context.currentTime
+      );
+
       oscillator.frequency.exponentialRampToValueAtTime(
         920,
         context.currentTime + 0.12
       );
+
       gain.gain.setValueAtTime(0.12, context.currentTime);
+
       gain.gain.exponentialRampToValueAtTime(
         0.001,
         context.currentTime + 0.22
       );
+
       oscillator.start();
       oscillator.stop(context.currentTime + 0.22);
     } else {
       oscillator.type = "triangle";
-      oscillator.frequency.setValueAtTime(440, context.currentTime);
+
+      oscillator.frequency.setValueAtTime(
+        440,
+        context.currentTime
+      );
+
       oscillator.frequency.setValueAtTime(
         660,
         context.currentTime + 0.12
       );
+
       oscillator.frequency.setValueAtTime(
         880,
         context.currentTime + 0.24
       );
+
       gain.gain.setValueAtTime(0.14, context.currentTime);
+
       gain.gain.exponentialRampToValueAtTime(
         0.001,
         context.currentTime + 0.55
       );
+
       oscillator.start();
       oscillator.stop(context.currentTime + 0.55);
     }
@@ -122,20 +194,9 @@ function playAuctionSound(type, enabled) {
   }
 }
 
-function getList(data) {
-  if (Array.isArray(data)) return data;
-  return data?.results || data?.items || [];
-}
-
-function formatTime(seconds) {
-  const safe = Math.max(0, seconds);
-  const minutes = Math.floor(safe / 60);
-  const remaining = safe % 60;
-
-  return `${String(minutes).padStart(2, "0")}:${String(
-    remaining
-  ).padStart(2, "0")}`;
-}
+// --------------------------------------------------
+// MAIN COMPONENT
+// --------------------------------------------------
 
 export default function AuctionArena({
   user,
@@ -147,12 +208,16 @@ export default function AuctionArena({
   const [selectedId, setSelectedId] = useState(null);
   const [bids, setBids] = useState([]);
   const [bidAmount, setBidAmount] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [bidding, setBidding] = useState(false);
+
   const [error, setError] = useState("");
+
   const [announcement, setAnnouncement] = useState(
     "Aaj ka auction shuru hone wala hai! Seat belt baandh lo! 🎤"
   );
+
   const [audienceMessages, setAudienceMessages] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [remaining, setRemaining] = useState(0);
@@ -162,89 +227,128 @@ export default function AuctionArena({
   const previousBid = useRef(null);
 
   const selectedLot =
-    lots.find((lot) => String(lot.id) === String(selectedId)) ||
+    lots.find(
+      (lot) => String(lot.id) === String(selectedId)
+    ) ||
     lots[0] ||
     null;
 
+  // ------------------------------------------------
+  // LOAD AUCTION LOTS
+  // ------------------------------------------------
+
   const fetchLots = useCallback(async (silent = false) => {
     try {
-      if (!silent) setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
 
       const response = await getAuctionLots();
-
       const items = getList(response);
 
       setLots(items);
 
       setSelectedId((current) => {
-        if (items.some((lot) => String(lot.id) === String(current))) {
+        if (
+          items.some(
+            (lot) => String(lot.id) === String(current)
+          )
+        ) {
           return current;
         }
 
-        const live = items.find((lot) => lot.status === "live");
+        const live = items.find(
+          (lot) => lot.status === "live"
+        );
+
         return live?.id ?? items[0]?.id ?? null;
       });
 
       setError("");
     } catch (err) {
-      setError(err.message || "Could not load auction items.");
+      setError(
+        err.message || "Could not load auction items."
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchBids = useCallback(async (lotId) => {
-    if (!lotId) return;
+  // ------------------------------------------------
+  // LOAD BID HISTORY
+  // ------------------------------------------------
 
-    try {
-      const response = await getAuctionBids(lotId);
-      const items = getList(response);
+  const fetchBids = useCallback(
+    async (lotId) => {
+      if (!lotId) return;
 
-      setBids(items);
+      try {
+        const response = await getAuctionBids(lotId);
+        const items = getList(response);
 
-      const newest = items[0];
+        setBids(items);
 
-      if (newest && lastBidId.current !== newest.id) {
-        if (lastBidId.current !== null) {
-          playAuctionSound("bid", soundEnabled);
+        const newest = items[0];
 
-          const oldBid = previousBid.current;
-          const isMyBid = newest.bidder === user?.username;
+        if (
+          newest &&
+          lastBidId.current !== newest.id
+        ) {
+          if (lastBidId.current !== null) {
+            playAuctionSound("bid", soundEnabled);
 
-          if (isMyBid) {
-            setAnnouncement(
-              "Bhai ne toh dhamaka kar diya! Aap highest bidder ho! 🔥"
-            );
-          } else if (oldBid && newest.amount > oldBid) {
-            setAnnouncement(
-              `${newest.bidder} ne aapko outbid kar diya! Ab kya karoge? 😭`
-            );
-          } else {
-            setAnnouncement(
-              `${newest.bidder} ne ${money(newest.amount)} BB ki bid lagayi!`
-            );
+            const oldBid = previousBid.current;
+            const isMyBid =
+              newest.bidder === user?.username;
+
+            if (isMyBid) {
+              setAnnouncement(
+                "Bhai ne toh dhamaka kar diya! Aap highest bidder ho! 🔥"
+              );
+            } else if (
+              oldBid !== null &&
+              Number(newest.amount) > oldBid
+            ) {
+              setAnnouncement(
+                `${newest.bidder} ne nayi bid laga di! Ab kya karoge? 😭`
+              );
+            } else {
+              setAnnouncement(
+                `${newest.bidder} ne ${money(
+                  newest.amount
+                )} BB ki bid lagayi!`
+              );
+            }
+
+            setAudienceMessages((current) => [
+              {
+                id: `${Date.now()}-${Math.random()}`,
+                name: "Live Audience",
+                avatar: "📢",
+                text: isMyBid
+                  ? "Oye hoye! Apna banda lead kar raha hai!"
+                  : "Oho! Nayi bid! Wallet sambhalo!",
+              },
+              ...current,
+            ].slice(0, 8));
           }
 
-          setAudienceMessages((current) => [
-            {
-              id: `${Date.now()}-${Math.random()}`,
-              name: "Live Audience",
-              avatar: "📢",
-              text: isMyBid
-                ? "Oye hoye! Apna banda lead kar raha hai!"
-                : "Oho! Nayi bid! Wallet sambhalo!",
-            },
-            ...current,
-          ].slice(0, 8));
+          lastBidId.current = newest.id;
+          previousBid.current = Number(newest.amount);
         }
-
-        lastBidId.current = newest.id;
-        previousBid.current = Number(newest.amount);
+      } catch (err) {
+        console.warn(
+          "Bid history refresh failed:",
+          err
+        );
       }
-    } catch (err) {
-      console.warn("Bid history refresh failed:", err);
-    }
-  }, [soundEnabled, user]);
+    },
+    [soundEnabled, user]
+  );
+
+  // ------------------------------------------------
+  // AUTOMATIC AUCTION REFRESH
+  // ------------------------------------------------
 
   useEffect(() => {
     fetchLots();
@@ -256,11 +360,16 @@ export default function AuctionArena({
     return () => window.clearInterval(interval);
   }, [fetchLots]);
 
+  // ------------------------------------------------
+  // AUTOMATIC BID REFRESH
+  // ------------------------------------------------
+
   useEffect(() => {
     if (!selectedLot?.id) return;
 
     lastBidId.current = null;
     previousBid.current = null;
+
     setBids([]);
 
     fetchBids(selectedLot.id);
@@ -272,6 +381,10 @@ export default function AuctionArena({
     return () => window.clearInterval(interval);
   }, [selectedLot?.id, fetchBids]);
 
+  // ------------------------------------------------
+  // LIVE COUNTDOWN
+  // ------------------------------------------------
+
   useEffect(() => {
     if (!selectedLot?.ends_at) {
       setRemaining(0);
@@ -282,7 +395,10 @@ export default function AuctionArena({
       const seconds = Math.max(
         0,
         Math.floor(
-          (new Date(selectedLot.ends_at).getTime() - Date.now()) / 1000
+          (
+            new Date(selectedLot.ends_at).getTime() -
+            Date.now()
+          ) / 1000
         )
       );
 
@@ -296,14 +412,22 @@ export default function AuctionArena({
     return () => window.clearInterval(interval);
   }, [selectedLot?.ends_at]);
 
+  // ------------------------------------------------
+  // AUDIENCE CHAT SIMULATION
+  // ------------------------------------------------
+
   useEffect(() => {
     const interval = window.setInterval(() => {
       const person =
-        AUDIENCE[audienceIndex.current % AUDIENCE.length];
+        AUDIENCE[
+          audienceIndex.current % AUDIENCE.length
+        ];
 
       const line =
         person.lines[
-          Math.floor(Math.random() * person.lines.length)
+          Math.floor(
+            Math.random() * person.lines.length
+          )
         ];
 
       audienceIndex.current += 1;
@@ -322,11 +446,17 @@ export default function AuctionArena({
     return () => window.clearInterval(interval);
   }, []);
 
+  // ------------------------------------------------
+  // AUCTIONEER ANNOUNCEMENTS
+  // ------------------------------------------------
+
   useEffect(() => {
     const interval = window.setInterval(() => {
       setAnnouncement(
         AUCTIONEER_LINES[
-          Math.floor(Math.random() * AUCTIONEER_LINES.length)
+          Math.floor(
+            Math.random() * AUCTIONEER_LINES.length
+          )
         ]
       );
     }, 12000);
@@ -334,14 +464,14 @@ export default function AuctionArena({
     return () => window.clearInterval(interval);
   }, []);
 
+  // ------------------------------------------------
+  // AUTOMATIC MINIMUM BID
+  // ------------------------------------------------
+
   useEffect(() => {
     if (!selectedLot) return;
 
-    const minimum =
-      Number(selectedLot.current_bid) > 0
-        ? Number(selectedLot.current_bid) +
-          Number(selectedLot.minimum_increment)
-        : Number(selectedLot.starting_price);
+    const minimum = getMinimumBid(selectedLot);
 
     setBidAmount(minimum.toFixed(2));
   }, [
@@ -350,6 +480,10 @@ export default function AuctionArena({
     selectedLot?.minimum_increment,
     selectedLot?.starting_price,
   ]);
+
+  // ------------------------------------------------
+  // PLACE BID
+  // ------------------------------------------------
 
   async function handleBid(event) {
     event.preventDefault();
@@ -361,21 +495,43 @@ export default function AuctionArena({
 
     if (!selectedLot || bidding) return;
 
-    const amount = Number(bidAmount);
-
-    const minimum =
-      Number(selectedLot.current_bid) > 0
-        ? Number(selectedLot.current_bid) +
-          Number(selectedLot.minimum_increment)
-        : Number(selectedLot.starting_price);
-
-    if (!Number.isFinite(amount) || amount < minimum) {
-      setError(`Minimum bid is ${money(minimum)} BB.`);
+    if (selectedLot.status !== "live" || remaining <= 0) {
+      setError("This auction is no longer accepting bids.");
       return;
     }
 
-    if (amount > Number(balance)) {
-      setError("Bhai, wallet mein itne paise nahi hain! 💸");
+    const amount = Number(bidAmount);
+    const minimum = getMinimumBid(selectedLot);
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      amount < minimum
+    ) {
+      setError(
+        `Minimum bid is ${money(minimum)} BB.`
+      );
+      return;
+    }
+
+    // IMPORTANT:
+    // If you are already the highest bidder, only the
+    // difference between your old bid and new bid is
+    // required from your wallet.
+
+    const isCurrentLeader =
+      selectedLot.highest_bidder === user.username;
+
+    const requiredDebit = isCurrentLeader
+      ? amount - Number(selectedLot.current_bid || 0)
+      : amount;
+
+    if (requiredDebit > Number(balance)) {
+      setError(
+        `Not enough Bazar Bucks! You need ${money(
+          requiredDebit
+        )} BB more.`
+      );
       return;
     }
 
@@ -383,10 +539,14 @@ export default function AuctionArena({
     setError("");
 
     try {
-      const result = await placeAuctionBid(selectedLot.id, {
-        amount: amount.toFixed(2),
-        idempotency_key: crypto.randomUUID(),
-      });
+      const result = await placeAuctionBid(
+        selectedLot.id,
+        {
+          amount: amount.toFixed(2),
+          idempotency_key:
+            crypto.randomUUID(),
+        }
+      );
 
       playAuctionSound("bid", soundEnabled);
 
@@ -407,7 +567,9 @@ export default function AuctionArena({
       if (result.auction) {
         setLots((current) =>
           current.map((lot) =>
-            lot.id === selectedLot.id ? result.auction : lot
+            String(lot.id) === String(selectedLot.id)
+              ? result.auction
+              : lot
           )
         );
       }
@@ -419,38 +581,63 @@ export default function AuctionArena({
 
       onBalanceRefresh?.();
     } catch (err) {
-      setError(err.message || "Bid failed. Try again.");
+      setError(
+        err.message || "Bid failed. Try again."
+      );
     } finally {
       setBidding(false);
     }
   }
 
-  function changeBid(direction) {
-    const increment = Number(selectedLot?.minimum_increment || 50);
-    const minimum =
-      Number(selectedLot?.current_bid || 0) > 0
-        ? Number(selectedLot.current_bid) + increment
-        : Number(selectedLot?.starting_price || 0);
+  // ------------------------------------------------
+  // INCREASE / DECREASE BID
+  // ------------------------------------------------
 
+  function changeBid(direction) {
+    if (!selectedLot) return;
+
+    const increment = Number(
+      selectedLot.minimum_increment || 50
+    );
+
+    const minimum = getMinimumBid(selectedLot);
     const current = Number(bidAmount || minimum);
 
-    setBidAmount(
-      Math.max(minimum, current + direction * increment).toFixed(2)
+    const next = Math.max(
+      minimum,
+      current + direction * increment
     );
+
+    setBidAmount(next.toFixed(2));
   }
+
+  // ------------------------------------------------
+  // LOADING SCREEN
+  // ------------------------------------------------
 
   if (loading && !lots.length) {
     return (
       <div className="auction-loading">
         <Gavel size={34} />
+
         <h2>Auction ka parda uth raha hai...</h2>
-        <p>Sharma ji apna wallet check kar rahe hain.</p>
+
+        <p>
+          Sharma ji apna wallet check kar rahe hain.
+        </p>
       </div>
     );
   }
 
+  // ------------------------------------------------
+  // MAIN PAGE
+  // ------------------------------------------------
+
   return (
     <div className="auction-page">
+
+      {/* HERO HEADER */}
+
       <header className="auction-hero">
         <div>
           <div className="auction-eyebrow">
@@ -464,14 +651,16 @@ export default function AuctionArena({
           </h1>
 
           <p>
-            Paisa tumhara, drama humara. Jo sabse zyada bolega,
-            wahi leke jayega!
+            Paisa tumhara, drama humara. Jo sabse
+            zyada bolega, wahi leke jayega!
           </p>
         </div>
 
         <div className="auction-hero-actions">
+
           <div className="auction-wallet">
             <Wallet size={17} />
+
             <div>
               <small>YOUR BAZAR BUCKS</small>
               <strong>{money(balance)} BB</strong>
@@ -480,11 +669,21 @@ export default function AuctionArena({
 
           <button
             className="auction-icon-button"
-            onClick={() => setSoundEnabled((value) => !value)}
-            title={soundEnabled ? "Mute sounds" : "Enable sounds"}
+            onClick={() =>
+              setSoundEnabled((value) => !value)
+            }
+            title={
+              soundEnabled
+                ? "Mute sounds"
+                : "Enable sounds"
+            }
             type="button"
           >
-            {soundEnabled ? <Volume2 /> : <VolumeX />}
+            {soundEnabled ? (
+              <Volume2 />
+            ) : (
+              <VolumeX />
+            )}
           </button>
 
           <button
@@ -495,35 +694,61 @@ export default function AuctionArena({
           >
             <RefreshCw size={18} />
           </button>
+
         </div>
       </header>
 
+      {/* AUCTION ANNOUNCER */}
+
       <div className="auction-announcer">
-        <div className="auctioneer-avatar">🎙️</div>
+        <div className="auctioneer-avatar">
+          🎙️
+        </div>
 
         <div className="auction-announcer-copy">
           <strong>AUCTION MASTER JI</strong>
           <p>{announcement}</p>
         </div>
 
-        <Sparkles className="auction-sparkle" size={23} />
+        <Sparkles
+          className="auction-sparkle"
+          size={23}
+        />
       </div>
 
+      {/* ERROR MESSAGE */}
+
       {error && (
-        <div className="auction-error" role="alert">
+        <div
+          className="auction-error"
+          role="alert"
+        >
           {error}
-          <button type="button" onClick={() => setError("")}>
+
+          <button
+            type="button"
+            onClick={() => setError("")}
+          >
             ×
           </button>
         </div>
       )}
 
+      {/* MAIN LAYOUT */}
+
       <div className="auction-layout">
+
         <main className="auction-main">
+
+          {/* SELECTED AUCTION */}
+
           <section className="auction-stage">
+
             {selectedLot ? (
               <>
+
                 <div className="auction-stage-top">
+
                   <span className="auction-lot-tag">
                     LOT #{selectedLot.id}
                   </span>
@@ -534,11 +759,18 @@ export default function AuctionArena({
                     <span />
                     {selectedLot.status}
                   </span>
+
                 </div>
+
+                {/* ITEM ART */}
 
                 <div className="auction-item-art">
                   <div className="auction-art-glow" />
-                  <span>{selectedLot.emoji || "🎁"}</span>
+
+                  <span>
+                    {selectedLot.emoji || "🎁"}
+                  </span>
+
                   <div className="auction-art-label">
                     EXCLUSIVE AUCTION ITEM
                   </div>
@@ -550,8 +782,11 @@ export default function AuctionArena({
                   {selectedLot.description}
                 </p>
 
+                {/* COUNTDOWN */}
+
                 <div className="auction-countdown">
                   <Clock3 size={18} />
+
                   <div>
                     <small>
                       {selectedLot.status === "live"
@@ -567,56 +802,77 @@ export default function AuctionArena({
                   </div>
                 </div>
 
+                {/* PRICES */}
+
                 <div className="auction-price-grid">
+
                   <div>
                     <small>STARTING PRICE</small>
+
                     <strong>
-                      ₹{money(selectedLot.starting_price)}
+                      {money(
+                        selectedLot.starting_price
+                      )} BB
                     </strong>
                   </div>
 
                   <div className="auction-current-price">
                     <small>CURRENT BID</small>
+
                     <strong>
-                      ₹{money(selectedLot.current_bid)}
+                      {money(
+                        selectedLot.current_bid
+                      )} BB
                     </strong>
                   </div>
 
                   <div>
                     <small>MINIMUM NEXT BID</small>
+
                     <strong>
-                      ₹
                       {money(
-                        selectedLot.current_bid > 0
-                          ? Number(selectedLot.current_bid) +
-                              Number(selectedLot.minimum_increment)
-                          : selectedLot.starting_price
-                      )}
+                        getMinimumBid(selectedLot)
+                      )} BB
                     </strong>
                   </div>
+
                 </div>
+
+                {/* HIGHEST BIDDER */}
 
                 <div className="auction-leader">
                   <Trophy size={19} />
+
                   <div>
-                    <small>CURRENT HIGHEST BIDDER</small>
+                    <small>
+                      CURRENT HIGHEST BIDDER
+                    </small>
+
                     <strong>
-                      {selectedLot.highest_bidder || "No bids yet"}
+                      {selectedLot.highest_bidder ||
+                        "No bids yet"}
                     </strong>
                   </div>
+
                   <span>👑</span>
                 </div>
 
-                {selectedLot.status === "live" && remaining > 0 ? (
+                {/* BIDDING FORM */}
+
+                {selectedLot.status === "live" &&
+                remaining > 0 ? (
+
                   <form
                     className="auction-bid-form"
                     onSubmit={handleBid}
                   >
+
                     <label htmlFor="auction-bid-amount">
                       ENTER YOUR BID (BAZAR BUCKS)
                     </label>
 
                     <div className="auction-bid-controls">
+
                       <button
                         type="button"
                         onClick={() => changeBid(-1)}
@@ -632,7 +888,9 @@ export default function AuctionArena({
                         step="0.01"
                         value={bidAmount}
                         onChange={(event) =>
-                          setBidAmount(event.target.value)
+                          setBidAmount(
+                            event.target.value
+                          )
                         }
                         required
                       />
@@ -644,6 +902,7 @@ export default function AuctionArena({
                       >
                         +
                       </button>
+
                     </div>
 
                     <button
@@ -652,46 +911,74 @@ export default function AuctionArena({
                       disabled={bidding}
                     >
                       <Gavel size={19} />
+
                       {bidding
                         ? "BID LAG RAHI HAI..."
                         : "LAGAO BOLI! 🔨"}
                     </button>
 
                     <p className="auction-bid-note">
-                      Your previous leading bid is refunded if another
-                      player outbids you.
+                      Your previous leading bid is
+                      refunded if another player outbids you.
                     </p>
+
                   </form>
+
                 ) : (
+
                   <div className="auction-closed-message">
                     {selectedLot.status === "sold"
-                      ? `🏆 SOLD! Winner: ${selectedLot.winner || "Winner"}`
+                      ? `🏆 SOLD! Winner: ${
+                          selectedLot.winner || "Winner"
+                        }`
                       : selectedLot.status === "unsold"
                         ? "Nobody bid. Sharma ji ne bhi haath peeche kar liya."
                         : "Auction is not open for bidding yet."}
                   </div>
+
                 )}
+
               </>
+
             ) : (
+
               <div className="auction-empty">
                 <Gavel size={44} />
-                <h2>Abhi koi auction nahi hai!</h2>
-                <p>Admin panel se auction items create karo.</p>
+
+                <h2>
+                  Abhi koi auction nahi hai!
+                </h2>
+
+                <p>
+                  Admin panel se auction items create karo.
+                </p>
               </div>
+
             )}
+
           </section>
 
+          {/* AUCTION CATALOGUE */}
+
           <section className="auction-lots-section">
+
             <div className="auction-section-heading">
+
               <div>
                 <span>THE CATALOGUE</span>
-                <h2>Items going under the hammer</h2>
+                <h2>
+                  Items going under the hammer
+                </h2>
               </div>
+
               <span>{lots.length} LOTS</span>
+
             </div>
 
             <div className="auction-lots-grid">
+
               {lots.map((lot) => (
+
                 <button
                   type="button"
                   key={lot.id}
@@ -702,91 +989,148 @@ export default function AuctionArena({
                   }`}
                   onClick={() => setSelectedId(lot.id)}
                 >
+
                   <span className="auction-lot-emoji">
                     {lot.emoji || "🎁"}
                   </span>
 
-                  <span className={`auction-lot-status ${lot.status}`}>
+                  <span
+                    className={`auction-lot-status ${lot.status}`}
+                  >
                     {lot.status}
                   </span>
 
                   <strong>{lot.name}</strong>
 
                   <small>
-                    Current: ₹{money(lot.current_bid)}
+                    Current: {money(lot.current_bid)} BB
                   </small>
 
                   <span className="auction-lot-open">
-                    View auction <ChevronUp size={14} />
+                    View auction
+                    <ChevronUp size={14} />
                   </span>
+
                 </button>
+
               ))}
+
             </div>
+
           </section>
 
+          {/* BID HISTORY */}
+
           <section className="auction-bid-history">
+
             <div className="auction-section-heading">
+
               <div>
                 <span>LIVE ACTIVITY</span>
                 <h2>Who is throwing money?</h2>
               </div>
+
               <Flame size={21} />
+
             </div>
 
             {bids.length ? (
+
               bids.slice(0, 8).map((bid, index) => (
-                <div className="auction-bid-row" key={bid.id}>
+
+                <div
+                  className="auction-bid-row"
+                  key={bid.id}
+                >
+
                   <span className="auction-bid-rank">
-                    {index === 0 ? "👑" : `#${index + 1}`}
+                    {index === 0
+                      ? "👑"
+                      : `#${index + 1}`}
                   </span>
 
                   <div>
                     <strong>{bid.bidder}</strong>
+
                     <small>
-                      {new Date(bid.created_at).toLocaleTimeString(
-                        "en-IN"
-                      )}
+                      {new Date(
+                        bid.created_at
+                      ).toLocaleTimeString("en-IN")}
                     </small>
                   </div>
 
                   <strong className="auction-bid-value">
-                    ₹{money(bid.amount)}
+                    {money(bid.amount)} BB
                   </strong>
+
                 </div>
+
               ))
+
             ) : (
+
               <p className="auction-no-bids">
-                Abhi tak kisi ne paisa nahi lagaya. Pehle tum bano!
+                Abhi tak kisi ne paisa nahi lagaya.
+                Pehle tum bano!
               </p>
+
             )}
+
           </section>
+
         </main>
 
+        {/* LIVE AUDIENCE */}
+
         <aside className="auction-audience">
+
           <div className="auction-audience-heading">
+
             <div>
               <span>LIVE CROWD</span>
+
               <h2>
-                <Users size={19} /> Public ki awaaz
+                <Users size={19} />
+                Public ki awaaz
               </h2>
             </div>
 
             <span className="auction-crowd-count">
-              <span /> LIVE
+              <span />
+              LIVE
             </span>
+
           </div>
 
+          {/* CROWD BANNER */}
+
           <div className="auction-crowd-banner">
+
             <div className="auction-crowd-faces">
               👨🏻‍🦱 👳🏽‍♂️ 👩🏻‍🦰 🧔🏽
             </div>
-            <strong>Public pagal ho rahi hai!</strong>
-            <small>Taali bhi, gaali bhi. Sab milega.</small>
+
+            <strong>
+              Public pagal ho rahi hai!
+            </strong>
+
+            <small>
+              Taali bhi, gaali bhi. Sab milega.
+            </small>
+
           </div>
 
+          {/* COMMENTS */}
+
           <div className="auction-comments">
+
             {audienceMessages.map((message) => (
-              <div className="auction-comment" key={message.id}>
+
+              <div
+                className="auction-comment"
+                key={message.id}
+              >
+
                 <span className="auction-comment-avatar">
                   {message.avatar}
                 </span>
@@ -795,32 +1139,52 @@ export default function AuctionArena({
                   <strong>{message.name}</strong>
                   <p>{message.text}</p>
                 </div>
+
               </div>
+
             ))}
 
             {!audienceMessages.length && (
+
               <div className="auction-audience-empty">
                 <MessageCircle size={26} />
-                <p>Audience ki entry hone wali hai...</p>
+
+                <p>
+                  Audience ki entry hone wali hai...
+                </p>
               </div>
+
             )}
+
           </div>
 
+          {/* CROWD FOOTER */}
+
           <div className="auction-crowd-footer">
+
             <span>📣</span>
+
             <p>
-              Public ka opinion free hai. Unka advice lena mehenga
-              pad sakta hai.
+              Public ka opinion free hai.
+              Unka advice lena mehenga pad sakta hai.
             </p>
+
           </div>
+
         </aside>
+
       </div>
+
+      {/* FOOTER */}
 
       <footer className="auction-footer-note">
         <span>🎭</span>
-        Satta Bazar Auction Arena · Virtual Bazar Bucks only ·
+
+        Satta Bazar Auction Arena ·
+        Virtual Bazar Bucks only ·
         Entertainment mode
       </footer>
+
     </div>
   );
 }
