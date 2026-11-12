@@ -98,16 +98,94 @@ HUMOUR = [
 ]
 
 
+
 AUCTION_ITEMS = [
-    ("royal-enfield", "Royal Enfield Classic 350", "A legendary motorcycle for the streets.", "🏍️", "180000.00", "5000.00"),
-    ("iphone-17", "iPhone 17 Pro", "Premium smartphone with flagship performance.", "📱", "95000.00", "2500.00"),
-    ("gaming-laptop", "RTX Gaming Laptop", "High-performance gaming machine.", "💻", "125000.00", "3000.00"),
-    ("playstation-5", "PlayStation 5", "Next-generation gaming console.", "🎮", "45000.00", "1500.00"),
-    ("rolex-watch", "Luxury Diamond Watch", "A premium collector's timepiece.", "⌚", "250000.00", "5000.00"),
-    ("sports-car", "Luxury Sports Car", "A dream car for the highest bidder.", "🏎️", "2500000.00", "50000.00"),
-    ("diamond-set", "Royal Diamond Collection", "Exclusive virtual diamond collection.", "💎", "500000.00", "10000.00"),
-    ("dream-house", "Luxury Dream House", "A premium virtual property.", "🏡", "5000000.00", "100000.00"),
+    (
+        "akhand-bharat-golden-map",
+        "The Golden Map of Akhand Bazaar",
+        "A mythical map said to reveal every hidden fortune in the Bazar.",
+        "🗺️", "750000000.00", "25000000.00"
+    ),
+    (
+        "last-samosa-of-1947",
+        "The Last Samosa of 1947",
+        "An allegedly preserved legendary samosa. One bite could change history.",
+        "🥟", "194700000.00", "5000000.00"
+    ),
+    (
+        "sharma-ji-report-card",
+        "Sharma Ji's Impossible Report Card",
+        "A flawless report card. Rumoured to contain marks that do not exist.",
+        "📜", "999999999.00", "50000000.00"
+    ),
+    (
+        "mughal-peacock-throne",
+        "The Forgotten Peacock Throne",
+        "A legendary royal throne decorated with priceless virtual jewels.",
+        "👑", "8500000000.00", "100000000.00"
+    ),
+    (
+        "ambani-personal-wifi",
+        "Unlimited Ambani Wi-Fi Password",
+        "A mythical password promising unlimited internet and zero buffering.",
+        "📡", "500000000.00", "25000000.00"
+    ),
+    (
+        "time-machine-delhi",
+        "Delhi's Time Machine",
+        "A mysterious machine capable of taking you back before your bad investments.",
+        "⏳", "4200000000.00", "100000000.00"
+    ),
+    (
+        "infinite-chai-kettle",
+        "The Infinite Chai Kettle",
+        "Never-ending cutting chai. A national treasure of the highest order.",
+        "🫖", "125000000.00", "5000000.00"
+    ),
+    (
+        "mystery-black-diamond",
+        "The Black Diamond of Rajasthan",
+        "An ultra-rare fictional diamond with a legendary curse.",
+        "💎", "9900000000.00", "250000000.00"
+    ),
+    (
+        "secret-reserve-bank-key",
+        "The Forbidden Reserve Bank Key",
+        "A fictional golden key to the most mysterious vault in the Bazar.",
+        "🗝️", "7500000000.00", "150000000.00"
+    ),
+    (
+        "moon-property-deed",
+        "Moon Property Ownership Deed",
+        "The most questionable real-estate investment in the universe.",
+        "🌕", "3000000000.00", "100000000.00"
+    ),
+    (
+        "worlds-last-packet-maggi",
+        "The Last Packet of Maggi",
+        "A legendary packet from a universe where Maggi never runs out.",
+        "🍜", "111111111.00", "5000000.00"
+    ),
+    (
+        "golden-chappal",
+        "The Golden Chappal of Justice",
+        "A mythical chappal capable of silencing an entire family gathering.",
+        "🩴", "888888888.00", "25000000.00"
+    ),
+    (
+        "sharma-ji-secret-formula",
+        "Sharma Ji's Success Formula",
+        "The secret formula behind every impossible achievement in the neighbourhood.",
+        "🧪", "9999999999.00", "500000000.00"
+    ),
+    (
+        "infinity-bazaar-coin",
+        "The Infinity Bazar Coin",
+        "One-of-one legendary collectible. Its value is whatever the crowd believes.",
+        "🪙", "15000000000.00", "500000000.00"
+    ),
 ]
+
 
 
 class Command(BaseCommand):
