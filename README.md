@@ -20,8 +20,6 @@ betting, prizes, or payment processing.
   staff adjustments.
 - Bounded stochastic price updates, reproducible simulation seeds, price
   snapshots, pause controls, event validation, price-retention command.
-- YOLO, Papa Ki Pari and Market Ka Postmortem round modes, isolated round price
-  state, transitions, scheduled round events, and round summaries.
 - Daily rewards, missions, achievements/XP/levels, leaderboards, Hinglish/English
   trade roasts, read-only accounting admin screens.
 - Session-authenticated private WebSockets and explicitly subscribed public
