@@ -230,3 +230,48 @@
     height: min(500px, calc(100dvh - 90px));
   }
 }
+
+/* Voice ON/OFF button */
+.nawab-voice-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid #40546d !important;
+  border-radius: 8px !important;
+  background: #26364b !important;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.nawab-voice-toggle.active {
+  background: #34c99a25 !important;
+  border-color: #34c99a !important;
+}
+
+/* Speaker button beside bot messages */
+.nawab-message.bot {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.nawab-message.bot > span {
+  flex: 1;
+}
+
+.nawab-speak-button {
+  flex-shrink: 0;
+  padding: 3px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #78b5e8;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.nawab-speak-button:hover {
+  background: #ffffff15;
+}
